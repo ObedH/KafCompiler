@@ -1,0 +1,5 @@
+task build:
+gcc -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -g -o ./build/compiler src/*.c
+
+task run:
+./build/compiler tests/complex.k

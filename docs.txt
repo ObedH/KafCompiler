@@ -1,0 +1,27 @@
+-----Kaf Compiler-----
+var: type variable_name = value;
+fn: return_type function_name(parameter_name: parameter_type) {
+	return value;
+}
+function_name(parameter_value);
+
+
+	-----Examples-----
+	import std.io;
+	
+	fn: int main(args: str[16]) {
+		
+		for(var: i32 i = 0; i < 26; i ++) {
+			printf("%d\n", i);
+		}
+		if(true) {
+			println("True!");
+		}
+		
+		var: i32 x = 0;
+		var: i32* y = &x;
+		x = *y;
+
+		println("Hello, World!");
+		return 0;
+	}
