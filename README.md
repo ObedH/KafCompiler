@@ -1,2 +1,0 @@
-# KafCompiler
-The Kaf Compiler
