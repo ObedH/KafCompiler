@@ -6,7 +6,7 @@
 
 void ptabs(usize num_tabs) {
 	for(usize i = 0; i < num_tabs; i ++) {
-		printf("\t");
+		printf("    ");
 	}
 	return;
 }
