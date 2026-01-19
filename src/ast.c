@@ -26,6 +26,12 @@ const char* binop_str(BinOp binop) {
 		return "GREATER THAN OR EQUAL TO";
 	case BINOP_LE:
 		return "LESS THAN OR EQUAL TO";
+	case BINOP_LOG_AND:
+		return "LOGICAL AND";
+	case BINOP_LOG_OR:
+		return "LOGICAL OR";
+	case BINOP_LOG_XOR:
+		return "LOGICAL EXCLUSIVE OR";
 	default:
 		return "UNKNOWN";
 	}
@@ -479,6 +485,15 @@ ASTNode* ast_binary_expr_node_create(String lexeme, ASTNode* left, ASTNode* righ
 	else if(!strcmp(lexeme.data, "<=")) {
 		node->binary_expr.op = BINOP_LE;
 	}
+	else if(!strcmp(lexeme.data, "&&")) {
+		node->binary_expr.op = BINOP_LOG_AND;
+	}
+	else if(!strcmp(lexeme.data, "||")) {
+		node->binary_expr.op = BINOP_LOG_OR;
+	}
+	else if(!strcmp(lexeme.data, "^^")) {
+		node->binary_expr.op = BINOP_LOG_XOR;
+	}
 
 	node->binary_expr.left = left;
 	node->binary_expr.right = right;
@@ -536,7 +551,7 @@ void ast_unary_expr_node_print(ASTNode* u, usize l) {
 	printf("Operation: %s\n", unop_str(u->unary_expr.op));
 	ptabs(l);
 	printf("Operand:\n");
-	ast_expr_node_print(u, l + 1);
+	ast_expr_node_print(u->unary_expr.operand, l + 1);
 
 
 	ptabs(l);

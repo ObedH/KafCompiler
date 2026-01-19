@@ -78,6 +78,7 @@ static const char* operators[] = {
 	">>",
 	"&&",
 	"||",
+	"^^",
 	"!",
 	"<",
 	"<=",
@@ -129,20 +130,23 @@ bool is_punctuator(const char* src, usize* out_len) {
 	return false;
 }
 bool is_operator(const char* src, usize* out_len) {
+
+	usize best_len = 0;
+
 	for(usize i = 0; i < NUM_OPERATORS; i ++) {
 		const char* op = operators[i];
 		usize op_len = strlen(op);
 
 		if(strncmp(src, op, op_len) == 0) {
-			if(out_len) {
-				*out_len = op_len;
-				return true;
-			}
-			else {
-				perror("Null pointer for out length!");
-				return false;
+			if(op_len > best_len) {
+				best_len = op_len;
 			}
 		}
+	}
+
+	if(best_len > 0) {
+		*out_len = best_len;
+		return true;
 	}
 	return false;
 }

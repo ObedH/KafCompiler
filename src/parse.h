@@ -70,13 +70,20 @@ static inline void expect_punct(Parser* p, const char* punctuator) {
 			p->pos ++;
 		}
 		else {
-			printf("Expected %s!\n", punctuator);
+			printf("-----SYNTAX ERROR-----\n");
+			printf("Expected token %s\n", punctuator);
+			printf("But found %s instead!\n", t->lexeme.data);
+			printf("----------------------\n");
 		}
 	}
 }
 static inline bool check_punct(Parser* p, const char* punctuator) {
 	Token* t = peek(p);
 	return (t && t->token_type == TT_PUNCT && !strcmp(t->lexeme.data, punctuator));
+}
+static inline bool check_op(Parser* p, const char* op) {
+	Token* t = peek(p);
+	return (t && t->token_type == TT_OPERATOR && !strcmp(t->lexeme.data, op));
 }
 
 Parser* parser_create(void);
@@ -91,6 +98,9 @@ ASTNode* parse_block(Parser* p);
 ASTNode* parse_stmt(Parser* p);
 ASTNode* parse_expr(Parser* p);
 ASTNode* parse_assignment(Parser* p);
+ASTNode* parse_log_or(Parser* p);
+ASTNode* parse_log_xor(Parser* p);
+ASTNode* parse_log_and(Parser* p);
 ASTNode* parse_equality(Parser* p);
 ASTNode* parse_comparison(Parser* p);
 ASTNode* parse_term(Parser* p);

@@ -34,10 +34,8 @@ ASTNode* parse_decl(Parser* p) {
 	(void)public;
 	if(match_keywrd(p, "fn")) {
 		ASTNode* fun = ast_func_node_create();
-		// I expect a : Nothing else is valid here.
-		if(!match_punct(p, ":")) {
-			printf("Syntax error, yeah yeah yeah\n");
-		}
+		expect_punct(p, ":");
+
 		ASTNode* return_type = parse_type(p);
 		Token* fn_name_token = next(p);
 		String fn_name = fn_name_token->lexeme;
@@ -52,9 +50,8 @@ ASTNode* parse_decl(Parser* p) {
 
 		expect_punct(p, ")");
 
-		if(!match_punct(p, "{")) {
-			printf("Syntax error, yeah yeah yeah\n");
-		}
+		expect_punct(p, "{");
+
 		ASTNode* fn_body = parse_block(p);
 		ast_func_node_init(fun, fn_name, fn_body, return_type);
 		return fun;
@@ -70,9 +67,9 @@ ASTNode* parse_type(Parser* p) {
 ASTNode* parse_param(Parser* p) {
 	ASTNode* param = ast_param_node_create();
 	Token* param_name = next(p);
-	if(!match_punct(p, ":")) {
-		printf("Syntax error, yeah yeah yeah\n");
-	}
+
+	expect_punct(p, ":");
+
 	ASTNode* param_type = parse_type(p);
 	ast_param_node_init(param, param_name->lexeme, param_type);
 	return param;
@@ -103,12 +100,48 @@ ASTNode* parse_stmt(Parser* p) {
 ASTNode* parse_expr(Parser* p) {
 	return parse_assignment(p);
 }
-ASTNode* parse_assignment(Parser* p) {
-	ASTNode* left = parse_equality(p);
 
-	if(match_op(p, "=")) {
+ASTNode* parse_assignment(Parser* p) {
+	ASTNode* left = parse_log_or(p);
+
+	if(check_op(p, "=")) {
+		next(p);
+
 		ASTNode* value = parse_assignment(p);
 		return ast_assign_expr_node_create(left, value);
+	}
+
+	return left;
+}
+ASTNode* parse_log_or(Parser* p) {
+	ASTNode* left = parse_log_xor(p);
+
+	while(check_op(p, "||")) {
+		Token* op = next(p);
+		ASTNode* right = parse_log_xor(p);
+		left = ast_binary_expr_node_create(op->lexeme, left, right);
+	}
+
+	return left;
+}
+ASTNode* parse_log_xor(Parser* p) {
+	ASTNode* left = parse_log_and(p);
+
+	while(check_op(p, "^^")) {
+		Token* op = next(p);
+		ASTNode* right = parse_log_and(p);
+		left = ast_binary_expr_node_create(op->lexeme, left, right);
+	}
+
+	return left;
+}
+ASTNode* parse_log_and(Parser* p) {
+	ASTNode* left = parse_equality(p);
+
+	while(check_op(p, "&&")) {
+		Token* op = next(p);
+		ASTNode* right = parse_equality(p);
+		left = ast_binary_expr_node_create(op->lexeme, left, right);
 	}
 
 	return left;
@@ -116,8 +149,8 @@ ASTNode* parse_assignment(Parser* p) {
 ASTNode* parse_equality(Parser* p) {
 	ASTNode* left = parse_comparison(p);
 
-	while(match_op(p, "==") || match_op(p, "!=")) {
-		Token* op = prev(p);
+	while(check_op(p, "==") || check_op(p, "!=")) {
+		Token* op = next(p);
 		ASTNode* right = parse_comparison(p);
 		left = ast_binary_expr_node_create(op->lexeme, left, right);
 	}
@@ -127,8 +160,8 @@ ASTNode* parse_equality(Parser* p) {
 ASTNode* parse_comparison(Parser* p) {
 	ASTNode* left = parse_term(p);
 
-	while(match_op(p, ">") || match_op(p, "<") || match_op(p, ">=") || match_op(p, "<=")) {
-		Token* op = prev(p);
+	while(check_op(p, ">") || check_op(p, "<") || check_op(p, ">=") || check_op(p, "<=")) {
+		Token* op = next(p);
 		ASTNode* right = parse_term(p);
 		left = ast_binary_expr_node_create(op->lexeme, left, right);
 	}
@@ -138,8 +171,8 @@ ASTNode* parse_comparison(Parser* p) {
 ASTNode* parse_term(Parser* p) {
 	ASTNode* left = parse_factor(p);
 
-	while(match_op(p, "+") || match_op(p, "-")) {
-		Token* op = prev(p);
+	while(check_op(p, "+") || check_op(p, "-")) {
+		Token* op = next(p);
 		ASTNode* right = parse_factor(p);
 		left = ast_binary_expr_node_create(op->lexeme, left, right);
 	}
@@ -149,8 +182,8 @@ ASTNode* parse_term(Parser* p) {
 ASTNode* parse_factor(Parser* p) {
 	ASTNode* left = parse_unary(p);
 
-	while(match_op(p, "*") || match_op(p, "/")) {
-		Token* op = prev(p);
+	while(check_op(p, "*") || check_op(p, "/")) {
+		Token* op = next(p);
 		ASTNode* right = parse_unary(p);
 		left = ast_binary_expr_node_create(op->lexeme, left, right);
 	}
@@ -158,8 +191,8 @@ ASTNode* parse_factor(Parser* p) {
 	return left;
 }
 ASTNode* parse_unary(Parser* p) {
-	if(match_op(p, "-") || match_op(p, "!") || match_op(p, "~")) {
-		Token* op = prev(p);
+	if(check_op(p, "-") || check_op(p, "!") || check_op(p, "*") || check_op(p, "&")) {
+		Token* op = next(p);
 		ASTNode* right = parse_unary(p);
 		return ast_unary_expr_node_create(op->lexeme, right);
 	}
