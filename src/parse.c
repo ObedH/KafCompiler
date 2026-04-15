@@ -12,21 +12,15 @@ Parser* parser_create(void) {
 	memset(p, 0, sizeof(Parser));
 	return p;
 }
-void parser_init(Parser* p, TokenList* tokens) {
-	p->tokens = tokens;
-}
 
-ASTNode* parse(TokenList* tokens) {
-	Parser* p = parser_create();
-	parser_init(p, tokens);
+ASTNode* parser_parse(Parser* p, TokenList* tokens) {
+	p->tokens = tokens;
 	ASTNode* program_node = ast_program_node_create();
 	while(p->pos < p->tokens->count) {
 		ASTNode* a = parse_decl(p);
 		if(!a) break;
 		ast_program_node_append(program_node, a);
 	}
-	parser_free(p);
-
 	return program_node;
 }
 ASTNode* parse_decl(Parser* p) {

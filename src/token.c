@@ -122,6 +122,28 @@ void token_list_free(TokenList* token_list) {
 	return;
 }
 
+TokenScanner* tokscan_create(void) {
+	TokenScanner* tmp = malloc(sizeof(*tmp));
+	if(!tmp) {
+		perror("Failed to allocate memory for Token Scanner!");
+		return NULL;
+	}
+	return tmp;
+}
+TokenList* tokscan_scan_src(TokenScanner* tokscan, SourceFile* src) {
+	tokscan->src = src;
+	tokscan->start = src->file_contents;
+	tokscan->current = src->file_contents;
+	tokscan->line = 1;
+	tokscan->col = 1;
+
+	return tokenize((char*)tokscan->src->file_contents);
+}
+void tokscan_free(TokenScanner* tokscan) {
+	free(tokscan);
+}
+
+
 TokenList* tokenize(char* input) {
 
 	// Initialize token list

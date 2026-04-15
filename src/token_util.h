@@ -37,11 +37,8 @@ static const char* keywords[] = {
 	"sizeof", 
 	"alignof", 
 	"typeof", 
-	"struct", 
 	"switch", 
-	"type", 
 	"as", 
-	"union", 
 	"void", 
 	"while"
 };

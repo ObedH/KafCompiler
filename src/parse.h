@@ -87,10 +87,9 @@ static inline bool check_op(Parser* p, const char* op) {
 }
 
 Parser* parser_create(void);
-void parser_init(Parser* parser, TokenList* tokens);
 void parser_free(Parser* parser);
+ASTNode* parser_parse(Parser* p, TokenList* tokens);
 
-ASTNode* parse(TokenList* tokens);
 ASTNode* parse_decl(Parser* p);
 ASTNode* parse_type(Parser* p);
 ASTNode* parse_param(Parser* p);

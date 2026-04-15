@@ -5,6 +5,15 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "string.h"
+#include "source.h"
+
+typedef struct {
+	SourceFile* src;
+	const char* start;
+	const char* current;
+	int line;
+	int col;
+} TokenScanner;
 
 typedef enum {
 	TT_IDENTIFIER,
@@ -37,5 +46,9 @@ void token_list_print(TokenList* token_list, usize level);
 void token_list_free(TokenList* token_list);
 
 TokenList* tokenize(char* input);
+
+TokenScanner* tokscan_create(void);
+TokenList* tokscan_scan_src(TokenScanner* tokscan, SourceFile* src_file);
+void tokscan_free(TokenScanner* tokscan);
 
 #endif // TOKEN_H

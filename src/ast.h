@@ -59,19 +59,6 @@ typedef enum {
 } UnOp;
 const char* unop_str(UnOp unop);
 
-typedef enum {
-	TYPE_U8,
-	TYPE_I8,
-	TYPE_U16,
-	TYPE_I16,
-	TYPE_U32,
-	TYPE_I32,
-	TYPE_U64,
-	TYPE_I64,
-
-	TYPE_PTR
-} TypeKind;
-
 typedef struct s_ast_node {
 	NodeType node_type;
 	usize line;
@@ -150,8 +137,6 @@ typedef struct s_ast_node {
 
 		struct {
 			String name;
-			TypeKind kind;
-			struct s_ast_node* base; // Only for TYPE_PTR
 		} type;
 	};
 } ASTNode;
