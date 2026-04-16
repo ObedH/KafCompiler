@@ -9,6 +9,7 @@ typedef struct {
 	char* data;
 } String;
 String string_create(char* str, usize len);
+String string_dup(String str);
 /*
 void string_append(String* s, char c);
 void string_append_str(String* s, const char* str);

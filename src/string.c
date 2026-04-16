@@ -15,7 +15,9 @@ String string_create(char* str, usize len) {
 	s.capacity = len + 1;
 	return s;
 }
-
+String string_dup(String str) {
+	return string_create(str.data, str.length);
+}
 void string_free(String s) {
 	free(s.data);
 }

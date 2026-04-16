@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include "token.h"
+#include "type.h"
+#include "symtab.h"
 #include "defs.h"
 
 typedef enum {
@@ -48,14 +50,19 @@ typedef enum {
 	BINOP_LE,
 	BINOP_LOG_AND,
 	BINOP_LOG_OR,
-	BINOP_LOG_XOR
+	BINOP_LOG_XOR,
+	BINOP_BIT_AND,
+	BINOP_BIT_OR,
+	BINOP_BIT_XOR,
+	BINOP_LSHIFT,
+	BINOP_RSHIFT,
+	BINOP_MOD
 } BinOp;
 const char* binop_str(BinOp binop);
 typedef enum {
 	UNOP_NEG,
 	UNOP_LOG_NOT,
-	UNOP_DEREF,
-	UNOP_REF
+	UNOP_BIT_NOT
 } UnOp;
 const char* unop_str(UnOp unop);
 
@@ -63,6 +70,9 @@ typedef struct s_ast_node {
 	NodeType node_type;
 	usize line;
 	usize col;
+
+	Symbol* resolved_symbol;
+	Type inferred_type;
 	
 	union {
 		struct {
@@ -105,6 +115,12 @@ typedef struct s_ast_node {
 			struct s_ast_node* cond;
 			struct s_ast_node* body;
 		} while_stmt;
+		struct {
+			struct s_ast_node* init;
+			struct s_ast_node* cond;
+			struct s_ast_node* update;
+			struct s_ast_node* stmt;
+		} for_stmt;
 		struct {
 			struct s_ast_node* expr;
 		} expr_stmt;
@@ -156,6 +172,11 @@ void ast_func_node_init(ASTNode* fn, String name, ASTNode* body, ASTNode* ret_ty
 void ast_func_node_print(ASTNode* fn, usize level);
 void ast_func_node_free(ASTNode* fn);
 
+ASTNode* ast_var_node_create(void);
+void ast_var_node_init(ASTNode* var, String name, ASTNode* type, ASTNode* initializer);
+void ast_var_node_print(ASTNode* var, usize level);
+void ast_var_node_free(ASTNode* var);
+
 ASTNode* ast_type_node_create(void);
 void ast_type_node_init(ASTNode* t, String name);
 void ast_type_node_print(ASTNode* t, usize level);
@@ -179,8 +200,22 @@ void ast_return_node_init(ASTNode* r, ASTNode* e);
 void ast_return_node_print(ASTNode* r, usize level);
 void ast_return_node_free(ASTNode* r);
 
+ASTNode* ast_for_node_create(void);
+void ast_for_node_init(ASTNode* f, ASTNode* i, ASTNode* c, ASTNode* u, ASTNode* b);
+void ast_for_node_print(ASTNode* f, usize level);
+void ast_for_node_free(ASTNode* f);
+
+ASTNode* ast_if_node_create(void);
+void ast_if_node_init(ASTNode* i, ASTNode* c, ASTNode* t, ASTNode* e);
+void ast_if_node_print(ASTNode* i, usize level);
+void ast_if_node_free(ASTNode* i);
+
 void ast_expr_node_print(ASTNode* e, usize level);
 void ast_expr_node_free(ASTNode* e);
+
+ASTNode* ast_expr_stmt_node_create(ASTNode* expr);
+void ast_expr_stmt_node_print(ASTNode* es, usize level);
+void ast_expr_stmt_node_free(ASTNode* es);
 
 ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value);
 void ast_assign_expr_node_print(ASTNode* a, usize level);
@@ -201,5 +236,11 @@ void ast_binary_expr_node_free(ASTNode* b);
 ASTNode* ast_unary_expr_node_create(String lexeme, ASTNode* operand);
 void ast_unary_expr_node_print(ASTNode* u, usize level);
 void ast_unary_expr_node_free(ASTNode* u);
+
+ASTNode* ast_call_expr_node_create(void);
+void ast_call_expr_node_init(ASTNode* c, ASTNode* callee);
+void ast_call_expr_node_add_arg(ASTNode* c, ASTNode* arg);
+void ast_call_expr_node_print(ASTNode* c, usize level);
+void ast_call_expr_node_free(ASTNode* c);
 
 #endif /* AST_H */

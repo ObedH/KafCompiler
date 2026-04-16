@@ -65,6 +65,14 @@ void comp_free_ast(BasicCompiler* comp) {
 	ast_program_node_free(comp->root);
 	comp->has_ast = false;
 }
+void comp_decl_pass(BasicCompiler* comp) {
+	if(!comp->has_ast) {
+		perror("No AST provided!");
+		return;
+	}
+
+	
+}
 void comp_close_src(BasicCompiler* comp) {
 	if(!comp->has_source) {
 		perror("No source provided!");

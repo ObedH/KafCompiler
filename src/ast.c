@@ -32,6 +32,18 @@ const char* binop_str(BinOp binop) {
 		return "LOGICAL OR";
 	case BINOP_LOG_XOR:
 		return "LOGICAL EXCLUSIVE OR";
+	case BINOP_BIT_AND:
+		return "BITWISE AND";
+	case BINOP_BIT_OR:
+		return "BITWISE OR";
+	case BINOP_BIT_XOR:
+		return "BITWISE EXCLUSIVE OR";
+	case BINOP_LSHIFT:
+		return "LEFT BIT SHIFT";
+	case BINOP_RSHIFT:
+		return "RIGHT BIT SHIFT";
+	case BINOP_MOD:
+		return "MODULO";
 	default:
 		return "UNKNOWN";
 	}
@@ -42,10 +54,8 @@ const char* unop_str(UnOp unop) {
 		return "NEGATIVE";
 	case UNOP_LOG_NOT:
 		return "LOGICAL NOT";
-	case UNOP_DEREF:
-		return "DEREFERENCE";
-	case UNOP_REF:
-		return "REFERENCE";
+	case UNOP_BIT_NOT:
+		return "BITWISE NOT";
 	default:
 		return "UNKNOWN";
 	}
@@ -60,12 +70,20 @@ ASTNode* ast_node_create(void) {
 	memset(node, 0, sizeof(ASTNode));
 	return node;
 }
-void ast_node_print(ASTNode* ast_node, usize level) {
+void ast_node_print(ASTNode* ast_node, usize l) {
+	if(!ast_node) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	switch(ast_node->node_type) {
 		case NODE_PROGRAM:
-			ast_program_node_print(ast_node, level);
+			ast_program_node_print(ast_node, l);
 			break;
 		default:
+			ptabs(l);
 			printf("Unknown Node type!\n");
 			break;
 	}
@@ -89,9 +107,8 @@ void ast_program_node_append(ASTNode* p, ASTNode* a) {
 		perror("Parent is not a program!");
 		return;
 	}
-	if(a->node_type != NODE_FUNCTION) {
-		perror("Child is not a function!");
-		// Unimplemented: it could be a variable declaration.
+	if(a->node_type != NODE_FUNCTION && a->node_type != NODE_VAR_DECL) {
+		perror("Child is not a function or variable declaration!");
 		return;
 	}
 	if(p->prgm.decl_count == p->prgm.capacity) {
@@ -106,29 +123,43 @@ void ast_program_node_append(ASTNode* p, ASTNode* a) {
 	}
 	p->prgm.decls[p->prgm.decl_count++] = a;
 }
-void ast_program_node_print(ASTNode* p, usize level) {
-	ptabs(level);
+void ast_program_node_print(ASTNode* p, usize l) {
+	if(!p) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
 	printf("-----PROGRAM-----\n");
-	ptabs(level);
+	ptabs(l);
 	printf("Declaration count: %u\n", p->prgm.decl_count);
-	ptabs(level);
+	ptabs(l);
 	printf("Declarations:\n");
 	for(u16 i = 0; i < p->prgm.decl_count; i ++) {
 		if(p->prgm.decls[i]->node_type == NODE_VAR_DECL) {
+			ast_var_node_print(p->prgm.decls[i], l + 1);
 		}
 		if(p->prgm.decls[i]->node_type == NODE_FUNCTION) {
-			ast_func_node_print(p->prgm.decls[i], level + 1);
+			ast_func_node_print(p->prgm.decls[i], l + 1);
 		}
 	}
 	printf("-----------------\n");
 }
 void ast_program_node_free(ASTNode* p) {
 	// Must free child nodes!
-	for(u16 i = 0; i < p->prgm.decl_count; i ++) {
-		if(p->prgm.decls[i]->node_type == NODE_VAR_DECL) {
-		}
-		if(p->prgm.decls[i]->node_type == NODE_FUNCTION) {
-			ast_func_node_free(p->prgm.decls[i]);
+	if(p->prgm.decls) {
+		for(u16 i = 0; i < p->prgm.decl_count; i ++) {
+			if(!p->prgm.decls[i]) {
+				continue;
+			}
+			if(p->prgm.decls[i]->node_type == NODE_VAR_DECL) {
+				ast_var_node_free(p->prgm.decls[i]);
+			}
+			else if(p->prgm.decls[i]->node_type == NODE_FUNCTION) {
+				ast_func_node_free(p->prgm.decls[i]);
+			}
 		}
 	}
 	free(p->prgm.decls);
@@ -137,6 +168,9 @@ void ast_program_node_free(ASTNode* p) {
 
 ASTNode* ast_func_node_create(void) {
 	ASTNode* node = ast_node_create();
+	if(!node) {
+		return NULL;
+	}
 	node->node_type = NODE_FUNCTION;
 	node->func.params = malloc(sizeof(ASTNode*) * 16);
 	if(!node->func.params) {
@@ -153,11 +187,18 @@ void ast_func_node_add_param(ASTNode* fn, ASTNode* p) {
 	fn->func.params[fn->func.param_count++] = p;
 }
 void ast_func_node_init(ASTNode* fn, String name, ASTNode* body, ASTNode* ret_type) {
-	fn->func.name = name;
+	fn->func.name = string_dup(name);
 	fn->func.body = body;
 	fn->func.return_type = ret_type;
 }
 void ast_func_node_print(ASTNode* fn, usize l) {
+	if(!fn) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----FUNCTION-----\n");
 
@@ -187,8 +228,59 @@ void ast_func_node_free(ASTNode* fn) {
 	for(u8 i = 0; i < fn->func.param_count; i ++) {
 		ast_param_node_free(fn->func.params[i]);
 	}
+	string_free(fn->func.name);
 	free(fn->func.params);
 	free(fn);
+}
+ASTNode* ast_var_node_create(void) {
+	ASTNode* node = ast_node_create();
+	node->node_type = NODE_VAR_DECL;
+	return node;
+}
+void ast_var_node_init(ASTNode* node, String name, ASTNode* type, ASTNode* initializer) {
+	if(!node || node->node_type != NODE_VAR_DECL) {
+		return;
+	}
+	node->var_declr.name = string_dup(name);
+	node->var_declr.type = type;
+	node->var_declr.initializer = initializer;
+}
+void ast_var_node_print(ASTNode* node, usize l) {
+	if(!node) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----VAR-----\n");
+
+	ptabs(l);
+	printf("Name: %s\n", node->var_declr.name.data);
+
+	ptabs(l);
+	printf("Type:\n");
+	ast_type_node_print(node->var_declr.type, l + 1);
+	
+	if(node->var_declr.initializer) {
+		ptabs(l);
+		printf("Initializer:\n");
+		ast_expr_node_print(node->var_declr.initializer, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Initializer: (none)\n");
+	}
+
+	ptabs(l);
+	printf("-------------\n");
+}
+void ast_var_node_free(ASTNode* node) {
+	string_free(node->var_declr.name);
+	ast_type_node_free(node->var_declr.type);
+	ast_expr_node_free(node->var_declr.initializer);
+	free(node);
 }
 ASTNode* ast_type_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -199,9 +291,16 @@ void ast_type_node_init(ASTNode* t, String name) {
 	if(!t || t->node_type != NODE_TYPE_NAME) {
 		return;
 	}
-	t->type.name = name;
+	t->type.name = string_dup(name);
 }
 void ast_type_node_print(ASTNode* t, usize l) {
+	if(!t) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----TYPE-----\n");
 
@@ -212,6 +311,7 @@ void ast_type_node_print(ASTNode* t, usize l) {
 	printf("--------------\n");
 }
 void ast_type_node_free(ASTNode* t) {
+	string_free(t->type.name);
 	free(t);
 }
 
@@ -221,10 +321,17 @@ ASTNode* ast_param_node_create(void) {
 	return node;
 }
 void ast_param_node_init(ASTNode* t, String name, ASTNode* type) {
-	t->param.name = name;
+	t->param.name = string_dup(name);
 	t->param.type = type;
 }
 void ast_param_node_print(ASTNode* t, usize l) {
+	if(!t) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----PARAMETER-----\n");
 
@@ -240,6 +347,7 @@ void ast_param_node_print(ASTNode* t, usize l) {
 }
 void ast_param_node_free(ASTNode* t) {
 	ast_type_node_free(t->param.type);
+	string_free(t->param.name);
 	free(t);
 }
 
@@ -277,20 +385,27 @@ void ast_block_node_add_stmt(ASTNode* b, ASTNode* s) {
 	}
 	b->block.stmts[b->block.stmt_count++] = s;
 }
-void ast_block_node_print(ASTNode* b, usize level) {
-	ptabs(level);
+void ast_block_node_print(ASTNode* b, usize l) {
+	if(!b) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
 	printf("-----BLOCK-----\n");
 
-	ptabs(level);
+	ptabs(l);
 	printf("Statement Count: %u\n", b->block.stmt_count);
 
-	ptabs(level);
+	ptabs(l);
 	printf("Statements:\n");
 	for(u16 i = 0; i < b->block.stmt_count; i ++) {
-		ast_stmt_node_print(b->block.stmts[i], level + 1);
+		ast_stmt_node_print(b->block.stmts[i], l + 1);
 	}
 
-	ptabs(level);
+	ptabs(l);
 	printf("---------------\n");
 }
 void ast_block_node_free(ASTNode* b) {
@@ -302,13 +417,61 @@ void ast_block_node_free(ASTNode* b) {
 }
 
 void ast_stmt_node_print(ASTNode* s, usize l) {
-	if(s->node_type == NODE_RETURN_STMT) {
-		ast_return_node_print(s, l);
+	if(!s) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	switch(s->node_type) {
+		case NODE_RETURN_STMT:
+			ast_return_node_print(s, l);
+			break;
+		case NODE_EXPR_STMT:
+			ast_expr_stmt_node_print(s, l);
+			break;
+		case NODE_FOR_STMT:
+			ast_for_node_print(s, l);
+			break;
+		case NODE_IF_STMT:
+			ast_if_node_print(s, l);
+			break;
+		case NODE_BLOCK:
+			ast_block_node_print(s, l);
+			break;
+		case NODE_VAR_DECL:
+			ast_var_node_print(s, l);
+			break;
+		default:
+			ptabs(l);
+			printf("Unknown statement type! (Trying to print %u)\n", s->node_type);
+			break;
 	}
 }
 void ast_stmt_node_free(ASTNode* s) {
-	if(s->node_type == NODE_RETURN_STMT) {
-		ast_return_node_free(s);
+	switch(s->node_type) {
+		case NODE_RETURN_STMT:
+			ast_return_node_free(s);
+			break;
+		case NODE_EXPR_STMT:
+			ast_expr_stmt_node_free(s);
+			break;
+		case NODE_FOR_STMT:
+			ast_for_node_free(s);
+			break;
+		case NODE_IF_STMT:
+			ast_if_node_free(s);
+			break;
+		case NODE_BLOCK:
+			ast_block_node_free(s);
+			break;
+		case NODE_VAR_DECL:
+			ast_var_node_free(s);
+			break;
+		default:
+			printf("Unknown statement type! (Trying to free %u)\n", s->node_type);
+			break;
 	}
 }
 
@@ -321,6 +484,13 @@ void ast_return_node_init(ASTNode* r, ASTNode* e) {
 	r->return_stmt.expr = e;
 }
 void ast_return_node_print(ASTNode* r, usize l) {
+	if(!r) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----RETURN STATEMENT-----\n");
 
@@ -339,7 +509,176 @@ void ast_return_node_free(ASTNode* r) {
 	}
 	free(r);
 }
+ASTNode* ast_for_node_create(void) {
+	ASTNode* tmp = ast_node_create();
+	tmp->node_type = NODE_FOR_STMT;
+	return tmp;
+}
+void ast_for_node_init(ASTNode* f, ASTNode* i, ASTNode* c, ASTNode* u, ASTNode* s) {
+	if(!f) {
+		return;
+	}
+	if(i) f->for_stmt.init = i;
+	if(c) f->for_stmt.cond = c;
+	if(u) f->for_stmt.update = u;
+	if(s) f->for_stmt.stmt = s;
+}
+void ast_for_node_print(ASTNode* f, usize l) {
+	if(!f) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----FOR LOOP-----\n");
 
+	if(f->for_stmt.init) {
+		ptabs(l);
+		printf("Initializer:\n");
+		if(f->for_stmt.init->node_type == NODE_VAR_DECL) {
+			ast_var_node_print(f->for_stmt.init, l + 1);
+		}
+		else if(f->for_stmt.init->node_type == NODE_EXPR_STMT) {
+			ast_expr_stmt_node_print(f->for_stmt.init, l + 1);
+		}
+		else {
+			perror("Invalid for loop initializer!");
+		}
+	}
+	else {
+		ptabs(l);
+		printf("Initializer: (none)\n");
+	}
+
+	if(f->for_stmt.cond) {
+		ptabs(l);
+		printf("Condition:\n");
+		ast_expr_node_print(f->for_stmt.cond, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Condition: (none)\n");
+	}
+
+	if(f->for_stmt.update) {
+		ptabs(l);
+		printf("Update:\n");
+		ast_expr_node_print(f->for_stmt.update, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Update: (none)\n");
+	}
+
+	if(f->for_stmt.stmt) {
+		ptabs(l);
+		printf("Body:\n");
+		ast_stmt_node_print(f->for_stmt.stmt, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Body: (none)\n");
+	}
+
+	ptabs(l);
+	printf("------------------\n");
+}
+void ast_for_node_free(ASTNode* f) {
+	if(f) {
+		if(f->for_stmt.init) {
+			if(f->for_stmt.init->node_type == NODE_VAR_DECL) {
+				ast_var_node_free(f->for_stmt.init);
+			}
+			else if(f->for_stmt.init->node_type == NODE_EXPR_STMT) {
+				ast_expr_stmt_node_free(f->for_stmt.init);
+			}
+			else {
+				perror("Invalid for loop initializer!");
+			}
+		}
+		ast_expr_node_free(f->for_stmt.cond);
+		ast_expr_node_free(f->for_stmt.update);
+		ast_stmt_node_free(f->for_stmt.stmt);
+	}
+	free(f);
+}
+ASTNode* ast_if_node_create(void) {
+	ASTNode* tmp = ast_node_create();
+	tmp->node_type = NODE_IF_STMT;
+	return tmp;
+}
+void ast_if_node_init(ASTNode* i, ASTNode* c, ASTNode* t, ASTNode* e) {
+	if(!i) return;
+	if(c) {
+		i->if_stmt.cond = c;
+	}
+	if(t) {
+		i->if_stmt.then_branch = t;
+	}
+	if(e) {
+		i->if_stmt.else_branch = e;
+	}
+}
+void ast_if_node_print(ASTNode* i, usize l) {
+	if(!i) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----IF STATEMENT-----\n");
+
+	if(i->if_stmt.cond) {
+		ptabs(l);
+		printf("Condition:\n");
+		ast_expr_node_print(i->if_stmt.cond, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Condition: (none)\n");
+	}
+
+	if(i->if_stmt.then_branch) {
+		ptabs(l);
+		printf("Then:\n");
+		ast_stmt_node_print(i->if_stmt.then_branch, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Then: (none)\n");
+	}
+
+	if(i->if_stmt.else_branch) {
+		ptabs(l);
+		printf("Else:\n");
+		ast_stmt_node_print(i->if_stmt.else_branch, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Else: (none)\n");
+	}
+
+	ptabs(l);
+	printf("----------------------\n");
+}
+void ast_if_node_free(ASTNode* i) {
+	if(i) {
+		if(i->if_stmt.cond) {
+			ast_expr_node_free(i->if_stmt.cond);
+		}
+		if(i->if_stmt.then_branch) {
+			ast_stmt_node_free(i->if_stmt.then_branch);
+		}
+		if(i->if_stmt.else_branch) {
+			ast_stmt_node_free(i->if_stmt.else_branch);
+		}
+	}
+	free(i);
+}
 ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value) {
 	ASTNode* a = ast_node_create();
 	a->node_type = NODE_ASSIGN_EXPR;
@@ -348,6 +687,13 @@ ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value) {
 	return a;
 }
 void ast_assign_expr_node_print(ASTNode* a, usize l) {
+	if(!a) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----ASSIGNMENT EXPRESSION-----\n");
 
@@ -369,6 +715,13 @@ void ast_assign_expr_node_free(ASTNode* a) {
 }
 
 void ast_expr_node_print(ASTNode* i, usize l) {
+	if(!i) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	switch(i->node_type) {
 	case NODE_LITERAL_INT:
 		ast_literal_int_node_print(i, l);
@@ -385,11 +738,17 @@ void ast_expr_node_print(ASTNode* i, usize l) {
 	case NODE_UNARY_EXPR:
 		ast_unary_expr_node_print(i, l);
 		break;
+	case NODE_CALL_EXPR:
+		ast_call_expr_node_print(i, l);
+		break;
 	default:
 		perror("Unhandled expression type!");
 	}
 }
 void ast_expr_node_free(ASTNode* i) {
+	if(!i) {
+		return;
+	}
 	switch(i->node_type) {
 	case NODE_LITERAL_INT:
 		ast_literal_int_node_free(i);
@@ -406,9 +765,41 @@ void ast_expr_node_free(ASTNode* i) {
 	case NODE_UNARY_EXPR:
 		ast_unary_expr_node_free(i);
 		break;
+	case NODE_CALL_EXPR:
+		ast_call_expr_node_free(i);
+		break;
 	default:
 		perror("Unhandled expression type!");
 	}
+}
+
+ASTNode* ast_expr_stmt_node_create(ASTNode* expr) {
+	ASTNode* node = ast_node_create();
+	node->node_type = NODE_EXPR_STMT;
+	node->expr_stmt.expr = expr;
+	return node;
+}
+void ast_expr_stmt_node_print(ASTNode* es, usize l) {
+	if(!es) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----EXPR STMT-----\n");
+
+	ptabs(l);
+	printf("Expression:\n");
+	ast_expr_node_print(es->expr_stmt.expr, l + 1);
+
+	ptabs(l);
+	printf("-------------------\n");
+}
+void ast_expr_stmt_node_free(ASTNode* es) {
+	ast_expr_node_free(es->expr_stmt.expr);
+	free(es);
 }
 
 ASTNode* ast_literal_int_node_create(usize int_value) {
@@ -418,6 +809,13 @@ ASTNode* ast_literal_int_node_create(usize int_value) {
 	return node;
 }
 void ast_literal_int_node_print(ASTNode* i, usize l) {
+	if(!i) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----INT LITERAL-----\n");
 
@@ -434,10 +832,17 @@ void ast_literal_int_node_free(ASTNode* i) {
 ASTNode* ast_identifier_node_create(String name) {
 	ASTNode* node = ast_node_create();
 	node->node_type = NODE_IDENTIFIER;
-	node->identifier.name = name;
+	node->identifier.name = string_dup(name);
 	return node;
 }
 void ast_identifier_node_print(ASTNode* i, usize l) {
+	if(!i) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----IDENTIFIER-----\n");
 
@@ -448,6 +853,7 @@ void ast_identifier_node_print(ASTNode* i, usize l) {
 	printf("--------------------\n");
 }
 void ast_identifier_node_free(ASTNode* i) {
+	string_free(i->identifier.name);
 	free(i);
 }
 
@@ -494,12 +900,37 @@ ASTNode* ast_binary_expr_node_create(String lexeme, ASTNode* left, ASTNode* righ
 	else if(!strcmp(lexeme.data, "^^")) {
 		node->binary_expr.op = BINOP_LOG_XOR;
 	}
+	else if(!strcmp(lexeme.data, "&")) {
+		node->binary_expr.op = BINOP_BIT_AND;
+	}
+	else if(!strcmp(lexeme.data, "|")) {
+		node->binary_expr.op = BINOP_BIT_OR;
+	}
+	else if(!strcmp(lexeme.data, "^")) {
+		node->binary_expr.op = BINOP_BIT_XOR;
+	}
+	else if(!strcmp(lexeme.data, "<<")) {
+		node->binary_expr.op = BINOP_LSHIFT;
+	}
+	else if(!strcmp(lexeme.data, ">>")) {
+		node->binary_expr.op = BINOP_RSHIFT;
+	}
+	else if(!strcmp(lexeme.data, "%")) {
+		node->binary_expr.op = BINOP_MOD;
+	}
 
 	node->binary_expr.left = left;
 	node->binary_expr.right = right;
 	return node;
 }
 void ast_binary_expr_node_print(ASTNode* b, usize l) {
+	if(!b) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----BINARY EXPRESSION-----\n");
 
@@ -533,17 +964,21 @@ ASTNode* ast_unary_expr_node_create(String lexeme, ASTNode* operand) {
 	else if(!strcmp(lexeme.data, "!")) {
 		node->unary_expr.op = UNOP_LOG_NOT;
 	}
-	else if(!strcmp(lexeme.data, "*")) {
-		node->unary_expr.op = UNOP_DEREF;
-	}
-	else if(!strcmp(lexeme.data, "&")) {
-		node->unary_expr.op = UNOP_REF;
+	else if(!strcmp(lexeme.data, "~")) {
+		node->unary_expr.op = UNOP_BIT_NOT;
 	}
 
 	node->unary_expr.operand = operand;
 	return node;
 }
 void ast_unary_expr_node_print(ASTNode* u, usize l) {
+	if(!u) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
 	ptabs(l);
 	printf("-----UNARY EXPRESSION-----\n");
 
@@ -560,4 +995,57 @@ void ast_unary_expr_node_print(ASTNode* u, usize l) {
 void ast_unary_expr_node_free(ASTNode* u) {
 	ast_expr_node_free(u->unary_expr.operand);
 	free(u);
+}
+
+ASTNode* ast_call_expr_node_create(void) {
+	ASTNode* node = ast_node_create();
+	node->node_type = NODE_CALL_EXPR;
+	node->call_expr.args = malloc(sizeof(ASTNode*) * 16);
+	if(!node->call_expr.args) {
+		perror("Error mallocating memory for AST function call arguments");
+	}
+	node->call_expr.arg_count = 0;
+	return node;
+}
+void ast_call_expr_node_init(ASTNode* c, ASTNode* callee) {
+	c->call_expr.callee = callee;
+}
+void ast_call_expr_node_add_arg(ASTNode* c, ASTNode* arg) {
+	if(c->call_expr.arg_count == 16) {
+		perror("Too many arguments!");
+		return;
+	}
+	c->call_expr.args[c->call_expr.arg_count++] = arg;
+}
+void ast_call_expr_node_print(ASTNode* c, usize l) {
+	if(!c) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----CALL EXPR-----\n");
+
+	ptabs(l);
+	printf("Callee:\n");
+	ast_expr_node_print(c->call_expr.callee, l + 1);
+
+	ptabs(l);
+	printf("Args:\n");
+	for(usize i = 0; i < c->call_expr.arg_count; i ++) {
+		ast_expr_node_print(c->call_expr.args[i], l + 1);
+	}
+
+	ptabs(l);
+	printf("-------------------\n");
+}
+void ast_call_expr_node_free(ASTNode* c) {
+	ast_expr_node_free(c->call_expr.callee);
+	for(usize i = 0; i < c->call_expr.arg_count; i ++) {
+		ast_expr_node_free(c->call_expr.args[i]);
+	}
+	free(c->call_expr.args);
+	free(c);
 }

@@ -152,8 +152,8 @@ TokenList* tokenize(char* input) {
 
 	// Initialize counters and char pointer
 	char* p = input;
-	usize col = 0;
-	usize line = 0;
+	usize col = 1;
+	usize line = 1;
 
 	// Loop through input string
 	while(*p) {

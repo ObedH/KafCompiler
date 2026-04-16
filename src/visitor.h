@@ -3,18 +3,12 @@
 
 #include "ast.h"
 #include "defs.h"
+#include "symtab.h"
 #include "string.h"
-
-typedef enum {
-	T_u8, T_i8, T_u16, T_i16,
-	T_u32, T_i32, T_f32,
-	T_u64, T_i64, T_f64,
-	T_usize, T_isize,
-	T_string
-} ValueType;
+#include "type.h"
 
 typedef struct {
-	ValueType type;
+	Type type;
 	union {
 		u8 u8_v;
 		i8 i8_v;
@@ -61,10 +55,11 @@ struct DeclVisitor {
 };
 
 typedef struct {
-	ExprVisitor expr_visitor;
-	StmtVisitor stmt_visitor;
-	DeclVisitor decl_visitor;
-} ASTVisitor;
-
+	DeclVisitor base;
+	SymbolTable* symtab;
+} DeclPass;
+void decl_visit_program(DeclVisitor* visitor, ASTNode* program);
+void decl_visit_var(DeclVisitor* v, ASTNode* node);
+void decl_visit_func(DeclVisitor* v, ASTNode* node);
 
 #endif
