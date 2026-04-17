@@ -74,7 +74,8 @@ void comp_decl_pass(BasicCompiler* comp) {
 		return;
 	}
 
-	
+	decl_init(&comp->decl_pass, comp->symtab_arena);
+	decl_visit_program(&comp->decl_pass.base, comp->root);
 }
 void comp_free_symtabs(BasicCompiler* comp) {
 	arena_free(comp->symtab_arena, (ItemFreer)symtab_free);

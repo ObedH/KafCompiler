@@ -102,6 +102,7 @@ ASTNode* parse_param(Parser* p);
 ASTNode* parse_block(Parser* p);
 ASTNode* parse_var_decl(Parser* p);
 ASTNode* parse_for_stmt(Parser* p);
+ASTNode* parse_while_stmt(Parser* p);
 ASTNode* parse_if_stmt(Parser* p);
 ASTNode* parse_stmt(Parser* p);
 

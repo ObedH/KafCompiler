@@ -26,40 +26,29 @@ typedef struct {
 	};
 } Value;
 
-typedef struct ExprVisitor ExprVisitor;
+typedef struct ASTVisitor ASTVisitor;
 
-struct ExprVisitor {
-	Value (*visitAssignExpr)(ExprVisitor*, ASTNode*);
-	Value (*visitBinaryExpr)(ExprVisitor*, ASTNode*);
-	Value (*visitUnaryExpr)(ExprVisitor*, ASTNode*);
-	Value (*visitCallExpr)(ExprVisitor*, ASTNode*);
-	Value (*visitLiteralIntExpr)(ExprVisitor*, ASTNode*);
+struct ASTVisitor {
+	Value (*visitAssignExpr)(ASTVisitor*, ASTNode*);
+	Value (*visitBinaryExpr)(ASTVisitor*, ASTNode*);
+	Value (*visitUnaryExpr)(ASTVisitor*, ASTNode*);
+	Value (*visitCallExpr)(ASTVisitor*, ASTNode*);
+	Value (*visitLiteralIntExpr)(ASTVisitor*, ASTNode*);
+
+	void (*visitExpression)(ASTVisitor*, ASTNode*);
+	void (*visitIf)(ASTVisitor*,ASTNode*);
+	void (*visitWhile)(ASTVisitor*,ASTNode*);
+	void (*visitReturn)(ASTVisitor*,ASTNode*);
+	void (*visitBlock)(ASTVisitor*,ASTNode*);
+
+	void (*visitVarDecl)(ASTVisitor*,ASTNode*);
+	void (*visitFuncDecl)(ASTVisitor*,ASTNode*);
+	void (*visitClassDecl)(ASTVisitor*,ASTNode*);
 };
 
-typedef struct StmtVisitor StmtVisitor;
-
-struct StmtVisitor {
-	void (*visitExpression)(StmtVisitor*, ASTNode*);
-	void (*visitIf)(StmtVisitor*,ASTNode*);
-	void (*visitWhile)(StmtVisitor*,ASTNode*);
-	void (*visitReturn)(StmtVisitor*,ASTNode*);
-	void (*visitBlock)(StmtVisitor*,ASTNode*);
-};
-
-typedef struct DeclVisitor DeclVisitor;
-
-struct DeclVisitor {
-	void (*visitVarDecl)(DeclVisitor*,ASTNode*);
-	void (*visitFuncDecl)(DeclVisitor*,ASTNode*);
-	void (*visitClassDecl)(DeclVisitor*,ASTNode*);
-};
-
-typedef struct {
-	DeclVisitor base;
-	SymbolTable* symtab;
-} DeclPass;
-void decl_visit_program(DeclVisitor* visitor, ASTNode* program);
-void decl_visit_var(DeclVisitor* v, ASTNode* node);
-void decl_visit_func(DeclVisitor* v, ASTNode* node);
+//Dispatch each decl into visit_decl
+void visit_prgm(ASTVisitor* v, ASTNode* node);
+//For each decl type, make the visitor visit it.
+void visit_decl(ASTVisitor* v, ASTNode* node);
 
 #endif

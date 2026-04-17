@@ -1,5 +1,5 @@
 task build:
-gcc -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -g -o ./build/compiler src/*.c
+gcc -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -g -o ./build/compiler src/pass/*.c src/*.c
 
 task run:
 ./build/compiler tests/loops.k

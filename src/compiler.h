@@ -8,6 +8,7 @@
 #include "ast.h"
 #include "visitor.h"
 #include "arena.h"
+#include "pass/decl_pass.h"
 
 typedef struct {
 	SourceFile* src;

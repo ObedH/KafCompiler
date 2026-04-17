@@ -152,6 +152,18 @@ ASTNode* parse_for_stmt(Parser* p) {
 
 	return fo;
 }
+ASTNode* parse_while_stmt(Parser* p) {
+	next(p);
+	expect_punct(p, "(");
+	ASTNode* cond = parse_expr(p);
+	expect_punct(p, ")");
+
+	ASTNode* body = parse_stmt(p);
+
+	ASTNode* _while = ast_while_node_create();
+	ast_while_node_init(_while, cond, body);
+	return _while;
+}
 ASTNode* parse_if_stmt(Parser* p) {
 	next(p);
 	ASTNode* if_stmt = ast_if_node_create();
@@ -190,6 +202,9 @@ ASTNode* parse_stmt(Parser* p) {
 	}
 	else if(!strcmp(t->lexeme.data, "if")) {
 		return parse_if_stmt(p);
+	}
+	else if(!strcmp(t->lexeme.data, "while")) {
+		return parse_while_stmt(p);
 	}
 	else if(!strcmp(t->lexeme.data, "{")) {
 		next(p);
