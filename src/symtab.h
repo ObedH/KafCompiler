@@ -4,6 +4,7 @@
 #include "hashmap.h"
 #include "defs.h"
 #include "type.h"
+#include "arena.h"
 #include "string.h"
 
 typedef enum {
@@ -51,14 +52,14 @@ struct SymbolTable {
 	SymbolTable* parent;
 	bool is_loop;
 };
-SymbolTable* symtab_create(ScopeType, bool is_loop);
+SymbolTable* symtab_create(Arena* arena, ScopeType, bool is_loop);
 void symtab_free(SymbolTable* symtab);
 
 Symbol* symtab_lookup(SymbolTable* table, const char* name);
 Symbol* symtab_lookup_current(SymbolTable* table, const char* name);
 void symtab_insert(SymbolTable* table, const char* name, Symbol* symbol);
 
-SymbolTable* symtab_push(SymbolTable* current);
+SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType scope_type, bool is_loop);
 SymbolTable* symtab_pop(SymbolTable* current);
 
 

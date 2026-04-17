@@ -14,8 +14,8 @@ String string_dup(String str);
 void string_append(String* s, char c);
 void string_append_str(String* s, const char* str);
 String string_substr(const String* s, usize start, usize len);
-bool string_eq(const String* a, const String* b);
 */
+bool string_eq(String a, String b);
 void string_free(String string);
 
 

@@ -205,6 +205,11 @@ void ast_for_node_init(ASTNode* f, ASTNode* i, ASTNode* c, ASTNode* u, ASTNode* 
 void ast_for_node_print(ASTNode* f, usize level);
 void ast_for_node_free(ASTNode* f);
 
+ASTNode* ast_while_node_create(void);
+void ast_while_node_init(ASTNode* w, ASTNode* c, ASTNode* b);
+void ast_while_node_print(ASTNode* w, usize level);
+void ast_while_node_free(ASTNode* w);
+
 ASTNode* ast_if_node_create(void);
 void ast_if_node_init(ASTNode* i, ASTNode* c, ASTNode* t, ASTNode* e);
 void ast_if_node_print(ASTNode* i, usize level);

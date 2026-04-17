@@ -36,7 +36,7 @@ void symbol_free(Symbol* symbol) {
 	free(symbol);
 }
 
-SymbolTable* symtab_create(ScopeType sc, bool is_loop) {
+SymbolTable* symtab_create(Arena* arena, ScopeType sc, bool is_loop) {
 	SymbolTable* tmp = malloc(sizeof(*tmp));
 	if(!tmp) {
 		perror("Failed to allocate memory for symbol table!");
@@ -45,6 +45,7 @@ SymbolTable* symtab_create(ScopeType sc, bool is_loop) {
 	tmp->symbols = hashmap_create();
 	tmp->scope_type = sc;
 	tmp->is_loop = is_loop;
+	arena_add_object(arena, tmp);
 	return tmp;
 }
 void symtab_free(SymbolTable* symtab) {
@@ -68,4 +69,14 @@ Symbol* symtab_lookup_current(SymbolTable* table, const char* name) {
 }
 void symtab_insert(SymbolTable* table, const char* name, Symbol* symbol) {
 	hashmap_put(table->symbols, name, symbol);
+}
+
+SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType sc, bool is_loop) {
+	SymbolTable* new_symtab = symtab_create(arena, sc, is_loop);
+	new_symtab->parent = current;
+
+	return new_symtab;
+}
+SymbolTable* symtab_pop(SymbolTable* current) {
+	return current->parent;
 }

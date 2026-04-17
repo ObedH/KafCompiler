@@ -65,6 +65,9 @@ void comp_free_ast(BasicCompiler* comp) {
 	ast_program_node_free(comp->root);
 	comp->has_ast = false;
 }
+void comp_setup_symtabs(BasicCompiler* comp) {
+	comp->symtab_arena = arena_create();
+}
 void comp_decl_pass(BasicCompiler* comp) {
 	if(!comp->has_ast) {
 		perror("No AST provided!");
@@ -72,6 +75,9 @@ void comp_decl_pass(BasicCompiler* comp) {
 	}
 
 	
+}
+void comp_free_symtabs(BasicCompiler* comp) {
+	arena_free(comp->symtab_arena, (ItemFreer)symtab_free);
 }
 void comp_close_src(BasicCompiler* comp) {
 	if(!comp->has_source) {

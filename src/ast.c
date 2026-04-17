@@ -187,7 +187,7 @@ void ast_func_node_add_param(ASTNode* fn, ASTNode* p) {
 	fn->func.params[fn->func.param_count++] = p;
 }
 void ast_func_node_init(ASTNode* fn, String name, ASTNode* body, ASTNode* ret_type) {
-	fn->func.name = string_dup(name);
+fn->func.name = string_dup(name);
 	fn->func.body = body;
 	fn->func.return_type = ret_type;
 }
@@ -434,6 +434,9 @@ void ast_stmt_node_print(ASTNode* s, usize l) {
 		case NODE_FOR_STMT:
 			ast_for_node_print(s, l);
 			break;
+		case NODE_WHILE_STMT:
+			ast_while_node_print(s, l);
+			break;
 		case NODE_IF_STMT:
 			ast_if_node_print(s, l);
 			break;
@@ -459,6 +462,9 @@ void ast_stmt_node_free(ASTNode* s) {
 			break;
 		case NODE_FOR_STMT:
 			ast_for_node_free(s);
+			break;
+		case NODE_WHILE_STMT:
+			ast_while_node_free(s);
 			break;
 		case NODE_IF_STMT:
 			ast_if_node_free(s);
@@ -603,6 +609,57 @@ void ast_for_node_free(ASTNode* f) {
 		ast_stmt_node_free(f->for_stmt.stmt);
 	}
 	free(f);
+}
+ASTNode* ast_while_node_create(void) {
+	ASTNode* tmp = ast_node_create();
+	tmp->node_type = NODE_WHILE_STMT;
+	return tmp;
+}
+void ast_while_node_init(ASTNode* w, ASTNode* c, ASTNode* b) {
+	if(!w) return;
+	w->while_stmt.cond = c;
+	w->while_stmt.body = b;
+}
+void ast_while_node_print(ASTNode* w, usize l) {
+	if(!w) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----WHILE LOOP-----\n");
+	
+	if(w->while_stmt.cond) {
+		ptabs(l);
+		printf("Condition:\n");
+		ast_expr_node_print(w->while_stmt.cond, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Condition: (none)\n");
+	}
+
+	if(w->while_stmt.body) {
+		ptabs(l);
+		printf("Body:\n");
+		ast_stmt_node_print(w->while_stmt.body, l + 1);
+	}
+	else {
+		ptabs(l);
+		printf("Body: (none)\n");
+	}
+
+	ptabs(l);
+	printf("--------------------\n");
+}
+void ast_while_node_free(ASTNode* w) {
+	if(w) {
+		if(w->while_stmt.cond) ast_expr_node_free(w->while_stmt.cond);
+		if(w->while_stmt.body) ast_stmt_node_free(w->while_stmt.body);
+	}
+	free(w);
 }
 ASTNode* ast_if_node_create(void) {
 	ASTNode* tmp = ast_node_create();

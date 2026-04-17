@@ -7,6 +7,7 @@
 #include "parse.h"
 #include "ast.h"
 #include "visitor.h"
+#include "arena.h"
 
 typedef struct {
 	SourceFile* src;
@@ -16,6 +17,8 @@ typedef struct {
 
 	Parser* parser;
 	ASTNode* root;
+
+	Arena* symtab_arena;
 
 	DeclPass decl_pass;
 
@@ -41,6 +44,8 @@ void comp_parse(BasicCompiler* comp);
 void comp_print_ast(BasicCompiler* comp);
 void comp_free_ast(BasicCompiler* comp);
 
+void comp_setup_symtabs(BasicCompiler* comp);
 void comp_decl_pass(BasicCompiler* comp);
+void comp_free_symtabs(BasicCompiler* comp);
 
 #endif

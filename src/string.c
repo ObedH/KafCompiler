@@ -18,6 +18,10 @@ String string_create(char* str, usize len) {
 String string_dup(String str) {
 	return string_create(str.data, str.length);
 }
+bool string_eq(String a, String b) {
+	if(a.length != b.length) return false;
+	return !strcmp(a.data, b.data);
+}
 void string_free(String s) {
 	free(s.data);
 }

@@ -1,16 +1,65 @@
 #ifndef TYPE_H
 #define TYPE_H
 
+#include "defs.h"
+#include "string.h"
+
 typedef enum {
 	T_u8, T_i8, T_u16, T_i16, T_u32, T_i32, T_f32,
 	T_u64, T_i64, T_f64, T_usize, T_isize, T_bool,
-	T_string
+	T_string, T_void,
+	T_array,
+	T_function,
+	T_class,
+	T_error
 } TypeKind;
-typedef struct {
+
+typedef struct Type Type;
+
+struct Type {
 	TypeKind kind;
-} Type;
 
+	union {
+		struct {
+			Type* element;
+			usize size;
+		} array;
+		struct {
+			Type* return_type;
+			Type** param_types;
+			usize param_count;
+		} function;
+		struct {
+			String name;
+		} class;
+	};
+};
 
+Type* type_make_primitive(TypeKind kind);
+Type* type_make_array(Type* element, usize size);
+Type* type_make_function(Type* return_type);
+void type_function_add_param(Type* fuction, Type* param);
+Type* type_make_class(String name);
 
+bool type_is_numeric(Type* t);
+bool type_is_integer(Type* t);
+bool type_is_array(Type* t);
+bool type_is_function(Type* t);
+bool type_is_class(Type* t);
+bool type_is_string(Type* t);
+bool type_is_void(Type* t);
+
+bool type_equals(Type* a, Type* b);
+
+const char* type_to_string(Type* t);
+usize type_size(Type* t);
+
+Type* type_function_return(Type* t);
+Type* type_function_param(Type* t, usize i);
+
+Type* type_base(Type* t);
+usize type_array_size(Type* t);
+
+void type_free(Type* t);
 
 #endif
