@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "string.h"
 #include <string.h>
+#include "util.h"
 
 Symbol* symbol_create(void) {
 	Symbol* tmp = malloc(sizeof(*tmp));
@@ -10,38 +11,93 @@ Symbol* symbol_create(void) {
 		perror("Failed to allocate memory for symbol!");
 		return NULL;
 	}
+	memset(tmp, 0, sizeof(*tmp));
 	return tmp;
 }
 void symbol_func_init(Symbol* symbol) {
 	symbol->func.param_capacity = 16;
 	symbol->func.param_count = 0;
-	symbol->func.param_types = malloc(sizeof(Type) * 16);
+	symbol->func.param_types = malloc(sizeof(Type*) * 16);
 	symbol->func.param_names = malloc(sizeof(String) * 16);
 }
-void symbol_func_add_param(Symbol* symbol, Type type, const char* name) {
+void symbol_func_add_param(Symbol* symbol, Type* type, String name) {
 	if(symbol->func.param_count == symbol->func.param_capacity) {
-		perror("Out of space for function parameters!");
+		printf("Out of space for function parameters!\n");
 		return;
 	}
-	symbol->func.param_types[symbol->func.param_count] = type;
-	symbol->func.param_names[symbol->func.param_count] = string_create((char*)name, strlen(name));
+	usize i = symbol->func.param_count++;
+	symbol->func.param_types[i] = type;
+	symbol->func.param_names[i] = string_dup(name);
+}
+void symbol_print(Symbol* symbol, usize l) {
+	if(!symbol) { 
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----SYMBOL-----\n");
+
+	if(symbol->type == SYM_FUNC) {
+		ptabs(l);
+		printf("Type: Function\n");
+		ptabs(l);
+		printf("Return Type:\n");
+		type_print(symbol->func.return_type, l + 1);
+
+		ptabs(l);
+		printf("Parameters:\n");
+		for(usize i = 0; i < symbol->func.param_count; i ++) {
+			ptabs(l + 1);
+			printf("-----PARAM-----\n");
+
+			ptabs(l + 1);
+			printf("Name: %s\n", symbol->func.param_names[i].data);
+
+			ptabs(l + 1);
+			printf("Type:\n");
+			type_print(symbol->func.param_types[i], l + 2);
+
+			ptabs(l + 1);
+			printf("---------------\n");
+		}
+	}
+	else if(symbol->type == SYM_VAR) {
+
+	}
+	else {
+		ptabs(l);
+		printf("Unknown symbol type!\n");
+	}
+
+	ptabs(l);
+	printf("----------------\n");
 }
 void symbol_free(Symbol* symbol) {
-	for(usize i = 0; i < symbol->func.param_count; i ++) {
-		string_free(symbol->func.param_names[i]);
+	if(symbol->type == SYM_FUNC) {
+		for(usize i = 0; i < symbol->func.param_count; i ++) {
+			string_free(symbol->func.param_names[i]);
+			type_free(symbol->func.param_types[i]);
+		}
+		free(symbol->func.param_names);
+		free(symbol->func.param_types);
+		//string_free(symbol->func.label);
 	}
-	free(symbol->func.param_names);
-	free(symbol->func.param_types);
-	string_free(symbol->func.label);
+	else if(symbol->type == SYM_VAR) {
+		type_free(symbol->var.type);
+	}
 	free(symbol);
 }
 
 SymbolTable* symtab_create(Arena* arena, ScopeType sc, bool is_loop) {
 	SymbolTable* tmp = malloc(sizeof(*tmp));
 	if(!tmp) {
-		perror("Failed to allocate memory for symbol table!");
+		printf("Failed to allocate memory for symbol table!\n");
 		return NULL;
 	}
+	memset(tmp, 0, sizeof(*tmp));
 	tmp->symbols = hashmap_create();
 	tmp->scope_type = sc;
 	tmp->is_loop = is_loop;

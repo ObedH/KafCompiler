@@ -29,6 +29,8 @@ typedef struct {
 typedef struct ASTVisitor ASTVisitor;
 
 struct ASTVisitor {
+	Type* (*visitType)(ASTVisitor*, ASTNode*);
+
 	Value (*visitAssignExpr)(ASTVisitor*, ASTNode*);
 	Value (*visitBinaryExpr)(ASTVisitor*, ASTNode*);
 	Value (*visitUnaryExpr)(ASTVisitor*, ASTNode*);
@@ -43,12 +45,13 @@ struct ASTVisitor {
 
 	void (*visitVarDecl)(ASTVisitor*,ASTNode*);
 	void (*visitFuncDecl)(ASTVisitor*,ASTNode*);
-	void (*visitClassDecl)(ASTVisitor*,ASTNode*);
 };
 
 //Dispatch each decl into visit_decl
 void visit_prgm(ASTVisitor* v, ASTNode* node);
 //For each decl type, make the visitor visit it.
 void visit_decl(ASTVisitor* v, ASTNode* node);
+
+Type* visit_type(ASTVisitor* v, ASTNode* node);
 
 #endif

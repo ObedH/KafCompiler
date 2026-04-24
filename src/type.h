@@ -35,6 +35,8 @@ struct Type {
 	};
 };
 
+TypeKind typekind_from_str(const char* str);
+
 Type* type_make_primitive(TypeKind kind);
 Type* type_make_array(Type* element, usize size);
 Type* type_make_function(Type* return_type);
@@ -50,6 +52,7 @@ bool type_is_string(Type* t);
 bool type_is_void(Type* t);
 
 bool type_equals(Type* a, Type* b);
+bool type_is_assignable(Type* a, Type* b);
 
 const char* type_to_string(Type* t);
 usize type_size(Type* t);
@@ -59,6 +62,8 @@ Type* type_function_param(Type* t, usize i);
 
 Type* type_base(Type* t);
 usize type_array_size(Type* t);
+
+void type_print(Type* type, usize l);
 
 void type_free(Type* t);
 

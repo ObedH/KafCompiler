@@ -22,14 +22,14 @@ typedef struct {
 		struct {
 			struct s_ast_node* node;
 			int stack_offset;
-			Type type;
+			Type* type;
 			bool has_initializer;
 			bool is_parameter;
 		} var;
 		struct {
 			struct s_ast_node* node;
-			Type return_type;
-			Type* param_types;
+			Type* return_type;
+			Type** param_types;
 			String* param_names;
 			usize param_count;
 			usize param_capacity;
@@ -40,7 +40,8 @@ typedef struct {
 } Symbol;
 Symbol* symbol_create(void);
 void symbol_func_init(Symbol* symbol);
-void symbol_func_add_param(Symbol* symbol, Type type, const char* name);
+void symbol_func_add_param(Symbol* symbol, Type* type, String name);
+void symbol_print(Symbol* symbol, usize l);
 void symbol_free(Symbol* symbol);
 
 typedef struct SymbolTable SymbolTable;

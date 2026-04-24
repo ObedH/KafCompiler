@@ -9,6 +9,7 @@
 #include "visitor.h"
 #include "arena.h"
 #include "pass/decl_pass.h"
+#include "pass/type_pass.h"
 
 typedef struct {
 	SourceFile* src;
@@ -22,6 +23,7 @@ typedef struct {
 	Arena* symtab_arena;
 
 	DeclPass decl_pass;
+	TypePass type_pass;
 
 	bool had_token_error;
 	bool had_parse_error;
@@ -47,6 +49,8 @@ void comp_free_ast(BasicCompiler* comp);
 
 void comp_setup_symtabs(BasicCompiler* comp);
 void comp_decl_pass(BasicCompiler* comp);
+void comp_type_pass(BasicCompiler* comp);
+void comp_type_pass_verbose(BasicCompiler* comp);
 void comp_free_symtabs(BasicCompiler* comp);
 
 #endif

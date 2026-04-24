@@ -14,6 +14,10 @@ int main(int argc, char** argv) {
 		comp_tokenize(comp);
 		comp_parse(comp);
 		comp_print_ast(comp);
+		comp_setup_symtabs(comp);
+		comp_type_pass_verbose(comp);
+
+		comp_free_symtabs(comp);
 		comp_free_ast(comp);
 		comp_free_tokens(comp);
 		comp_close_src(comp);

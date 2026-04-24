@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 BasicCompiler* comp_create(void) {
 	BasicCompiler* tmp = malloc(sizeof(*tmp));
@@ -8,6 +9,8 @@ BasicCompiler* comp_create(void) {
 		perror("Failed to allocate memory for Basic Compiler!");
 		return NULL;
 	}
+
+	memset(tmp, 0, sizeof(*tmp));
 
 	return tmp;
 }
@@ -70,12 +73,28 @@ void comp_setup_symtabs(BasicCompiler* comp) {
 }
 void comp_decl_pass(BasicCompiler* comp) {
 	if(!comp->has_ast) {
-		perror("No AST provided!");
+		printf("No AST provided!\n");
 		return;
 	}
 
 	decl_init(&comp->decl_pass, comp->symtab_arena);
 	decl_visit_program(&comp->decl_pass.base, comp->root);
+}
+void comp_type_pass(BasicCompiler* comp) {
+	if(!comp->has_ast) {
+		printf("No AST provided!\n");
+		return;
+	}
+	type_init(&comp->type_pass, false, comp->symtab_arena);
+	type_visit_program(&comp->type_pass, comp->root);
+}
+void comp_type_pass_verbose(BasicCompiler* comp) {
+	if(!comp->has_ast) {
+		printf("No AST provided!\n");
+		return;
+	}
+	type_init(&comp->type_pass, true, comp->symtab_arena);
+	type_visit_program(&comp->type_pass, comp->root);
 }
 void comp_free_symtabs(BasicCompiler* comp) {
 	arena_free(comp->symtab_arena, (ItemFreer)symtab_free);

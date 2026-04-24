@@ -91,6 +91,12 @@ void ast_node_print(ASTNode* ast_node, usize l) {
 void ast_node_free(ASTNode* ast_node) {
 	free(ast_node);
 }
+static void free_ast(ASTNode* ast_node) {
+	if(ast_node) {
+		if(ast_node->inferred_type) type_free(ast_node->inferred_type);
+	}
+	free(ast_node);
+}
 
 ASTNode* ast_program_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -163,7 +169,7 @@ void ast_program_node_free(ASTNode* p) {
 		}
 	}
 	free(p->prgm.decls);
-	free(p);
+	free_ast(p);
 }
 
 ASTNode* ast_func_node_create(void) {
@@ -230,7 +236,7 @@ void ast_func_node_free(ASTNode* fn) {
 	}
 	string_free(fn->func.name);
 	free(fn->func.params);
-	free(fn);
+	free_ast(fn);
 }
 ASTNode* ast_var_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -280,7 +286,7 @@ void ast_var_node_free(ASTNode* node) {
 	string_free(node->var_declr.name);
 	ast_type_node_free(node->var_declr.type);
 	ast_expr_node_free(node->var_declr.initializer);
-	free(node);
+	free_ast(node);
 }
 ASTNode* ast_type_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -312,7 +318,7 @@ void ast_type_node_print(ASTNode* t, usize l) {
 }
 void ast_type_node_free(ASTNode* t) {
 	string_free(t->type.name);
-	free(t);
+	free_ast(t);
 }
 
 ASTNode* ast_param_node_create(void) {
@@ -348,7 +354,7 @@ void ast_param_node_print(ASTNode* t, usize l) {
 void ast_param_node_free(ASTNode* t) {
 	ast_type_node_free(t->param.type);
 	string_free(t->param.name);
-	free(t);
+	free_ast(t);
 }
 
 ASTNode* ast_block_node_create(void) {
@@ -413,7 +419,7 @@ void ast_block_node_free(ASTNode* b) {
 		ast_stmt_node_free(b->block.stmts[i]);
 	}
 	free(b->block.stmts);
-	free(b);
+	free_ast(b);
 }
 
 void ast_stmt_node_print(ASTNode* s, usize l) {
@@ -513,7 +519,7 @@ void ast_return_node_free(ASTNode* r) {
 	if(r->return_stmt.expr) {
 		ast_expr_node_free(r->return_stmt.expr);
 	}
-	free(r);
+	free_ast(r);
 }
 ASTNode* ast_for_node_create(void) {
 	ASTNode* tmp = ast_node_create();
@@ -608,7 +614,7 @@ void ast_for_node_free(ASTNode* f) {
 		ast_expr_node_free(f->for_stmt.update);
 		ast_stmt_node_free(f->for_stmt.stmt);
 	}
-	free(f);
+	free_ast(f);
 }
 ASTNode* ast_while_node_create(void) {
 	ASTNode* tmp = ast_node_create();
@@ -659,7 +665,7 @@ void ast_while_node_free(ASTNode* w) {
 		if(w->while_stmt.cond) ast_expr_node_free(w->while_stmt.cond);
 		if(w->while_stmt.body) ast_stmt_node_free(w->while_stmt.body);
 	}
-	free(w);
+	free_ast(w);
 }
 ASTNode* ast_if_node_create(void) {
 	ASTNode* tmp = ast_node_create();
@@ -734,7 +740,7 @@ void ast_if_node_free(ASTNode* i) {
 			ast_stmt_node_free(i->if_stmt.else_branch);
 		}
 	}
-	free(i);
+	free_ast(i);
 }
 ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value) {
 	ASTNode* a = ast_node_create();
@@ -856,7 +862,7 @@ void ast_expr_stmt_node_print(ASTNode* es, usize l) {
 }
 void ast_expr_stmt_node_free(ASTNode* es) {
 	ast_expr_node_free(es->expr_stmt.expr);
-	free(es);
+	free_ast(es);
 }
 
 ASTNode* ast_literal_int_node_create(usize int_value) {
@@ -883,7 +889,7 @@ void ast_literal_int_node_print(ASTNode* i, usize l) {
 	printf("---------------------\n");
 }
 void ast_literal_int_node_free(ASTNode* i) {
-	free(i);
+	free_ast(i);
 }
 
 ASTNode* ast_identifier_node_create(String name) {
@@ -911,7 +917,7 @@ void ast_identifier_node_print(ASTNode* i, usize l) {
 }
 void ast_identifier_node_free(ASTNode* i) {
 	string_free(i->identifier.name);
-	free(i);
+	free_ast(i);
 }
 
 ASTNode* ast_binary_expr_node_create(String lexeme, ASTNode* left, ASTNode* right) {
@@ -1008,7 +1014,7 @@ void ast_binary_expr_node_print(ASTNode* b, usize l) {
 void ast_binary_expr_node_free(ASTNode* b) {
 	ast_expr_node_free(b->binary_expr.left);
 	ast_expr_node_free(b->binary_expr.right);
-	free(b);
+	free_ast(b);
 }
 
 ASTNode* ast_unary_expr_node_create(String lexeme, ASTNode* operand) {
@@ -1051,7 +1057,7 @@ void ast_unary_expr_node_print(ASTNode* u, usize l) {
 }
 void ast_unary_expr_node_free(ASTNode* u) {
 	ast_expr_node_free(u->unary_expr.operand);
-	free(u);
+	free_ast(u);
 }
 
 ASTNode* ast_call_expr_node_create(void) {
@@ -1104,5 +1110,5 @@ void ast_call_expr_node_free(ASTNode* c) {
 		ast_expr_node_free(c->call_expr.args[i]);
 	}
 	free(c->call_expr.args);
-	free(c);
+	free_ast(c);
 }

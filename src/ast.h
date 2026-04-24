@@ -72,7 +72,7 @@ typedef struct s_ast_node {
 	usize col;
 
 	Symbol* resolved_symbol;
-	Type inferred_type;
+	Type* inferred_type;
 	
 	union {
 		struct {

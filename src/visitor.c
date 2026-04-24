@@ -17,3 +17,10 @@ void visit_decl(ASTVisitor* v, ASTNode* node) {
 			break;
 	}
 }
+
+Type* visit_type(ASTVisitor* v, ASTNode* node) {
+	if(v->visitType) {
+		return v->visitType(v, node);
+	}
+	return NULL;
+}

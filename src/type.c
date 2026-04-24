@@ -1,6 +1,8 @@
 #include "type.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "util.h"
+#include <string.h>
 
 static Type TYPE_U8 = {.kind=T_u8};
 static Type TYPE_I8 = {.kind=T_i8};
@@ -27,6 +29,28 @@ static Type* type_create(TypeKind kind) {
 	}
 	tmp->kind = kind;
 	return tmp;
+}
+
+TypeKind typekind_from_str(const char* str) {
+	if(!strcmp(str, "u8")) return T_u8;
+	if(!strcmp(str, "i8")) return T_i8;
+	if(!strcmp(str, "u16")) return T_u16;
+	if(!strcmp(str, "i16")) return T_i16;
+	if(!strcmp(str, "u32")) return T_u32;
+	if(!strcmp(str, "i32")) return T_i32;
+	if(!strcmp(str, "f32")) return T_f32;
+	if(!strcmp(str, "u64")) return T_u64;
+	if(!strcmp(str, "i64")) return T_i64;
+	if(!strcmp(str, "f64")) return T_f64;
+	if(!strcmp(str, "usize")) return T_usize;
+	if(!strcmp(str, "isize")) return T_isize;
+	if(!strcmp(str, "string")) return T_string;
+	if(!strcmp(str, "bool")) return T_bool;
+	if(!strcmp(str, "void")) return T_void;
+	printf("-----TYPE ERROR-----\n");
+	printf("Unknown type: '%s'!\n", str);
+	printf("--------------------\n");
+	return T_error;
 }
 
 Type* type_make_primitive(TypeKind kind) {
@@ -74,6 +98,13 @@ void type_function_add_param(Type* function, Type* param) {
 		return;
 	}
 	function->function.param_types[function->function.param_count++] = param;
+}
+Type* type_function_param(Type* function, usize i) {
+	if(i >= function->function.param_count) {
+		printf("Invalid function parameter type index!\n");
+		return NULL;
+	}
+	return function->function.param_types[i];
 }
 Type* type_make_class(String name) {
 	Type* tmp = type_create(T_class);
@@ -144,7 +175,113 @@ bool type_equals(Type* a, Type* b) {
 	}
 }
 
+bool type_is_assignable(Type* a, Type* b) {
+	if(type_equals(a, b)) return true;
+	if(!a || !b) return false;
+	switch(a->kind) {
+		case T_array: return false;
+		case T_function: return false;
+		case T_class: return true;
+		case T_string: return true;
+		case T_void: return false;
+		default:
+			if(type_is_numeric(a)) {
+				return type_is_numeric(b);
+			}
+			if(a->kind == T_bool) {
+				return b->kind == T_bool;
+			}
+			printf("Unknown type kind!\n");
+			return false
 
+	}
+}
+
+void type_print(Type* t, usize l) {
+	if(!t) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----TYPE-----\n");
+	switch(t->kind) {
+		case T_array:
+			ptabs(l);
+			printf("Kind: Array\n");
+			ptabs(l);
+			printf("Elements: %u\n", t->array.size);
+			ptabs(l);
+			printf("Base:\n");
+			type_print(t->array.element, l + 1);
+			break;
+		case T_function:
+			ptabs(l);
+			printf("Kind: Function\n");
+			ptabs(l);
+			printf("Return type:\n");
+			type_print(t->function.return_type, l + 1);
+			ptabs(l);
+			printf("Params:\n");
+			for(usize i = 0; i < t->function.param_count; i ++) {
+				type_print(type_function_param(t, i), l + 1);
+			}
+			break;
+		case T_class:
+			ptabs(l);
+			printf("Kind: Class\n");
+			ptabs(l);
+			printf("Name: %s\n", t->class.name.data);
+			break;
+		case T_u8:
+		case T_i8:
+		case T_u16:
+		case T_i16:
+		case T_u32:
+		case T_i32:
+		case T_f32:
+		case T_u64:
+		case T_i64:
+		case T_f64:
+		case T_usize:
+		case T_isize:
+		case T_bool:
+		case T_string:
+		case T_void:
+			ptabs(l);
+			printf("Kind: Primitive\n");
+			ptabs(l);
+			printf("Base: ");
+			switch(t->kind) {
+				case T_u8: printf("u8"); break;
+				case T_i8: printf("i8"); break;
+				case T_u16: printf("u16"); break;
+				case T_i16: printf("i16"); break;
+				case T_u32: printf("u32"); break;
+				case T_i32: printf("i32"); break;
+				case T_f32: printf("f32"); break;
+				case T_u64: printf("u64"); break;
+				case T_i64: printf("i64"); break;
+				case T_f64: printf("f64"); break;
+				case T_usize: printf("usize"); break;
+				case T_isize: printf("isize"); break;
+				case T_void: printf("void"); break;
+				case T_bool: printf("bool"); break;
+				case T_string: printf("string"); break;
+				default: printf("Unkown type"); break;
+			}
+			putchar('\n');
+			break;
+		default:
+			ptabs(l);
+			printf("Kind: Error\n");
+			break;
+	}
+	ptabs(l);
+	printf("--------------\n");
+}
 
 void type_free(Type* t) {
 	if(!t) return;
