@@ -3,6 +3,8 @@
 
 #include "defs.h"
 
+/* -------------------- LEXEME LISTS -------------------- */
+
 static const char* keywords[] = {
 	"break", 
 	"case", 
@@ -77,6 +79,7 @@ static const char* operators[] = {
 };
 #define NUM_OPERATORS (sizeof(operators)/sizeof(operators[0]))
 
+/* -------------------- TOKEN KIND DETECTORS -------------------- */
 
 bool is_keyword(const char* lexeme, usize length) {
 	for(usize i = 0; i < NUM_KEYWORDS; i ++) {

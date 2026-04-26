@@ -4,6 +4,8 @@
 #include "util.h"
 #include <string.h>
 
+/* -------------------- PRIMITIVE TYPES -------------------- */
+
 static Type TYPE_INT_LIT = {.kind=T_int_literal};
 static Type TYPE_FLOAT_LIT = {.kind=T_float_literal};
 static Type TYPE_U8 = {.kind=T_u8};
@@ -24,15 +26,7 @@ static Type TYPE_VOID = {.kind=T_void};
 static Type TYPE_BOOL = {.kind=T_bool};
 static Type TYPE_ERROR = {.kind=T_error};
 
-static Type* type_create(TypeKind kind) {
-	Type* tmp = malloc(sizeof(*tmp));
-	if(!tmp) {
-		perror("Failed to allocate memory for Type");
-		return NULL;
-	}
-	tmp->kind = kind;
-	return tmp;
-}
+/* -------------------- TYPE KIND HELPER FUNCTIONS -------------------- */
 
 TypeKind typekind_from_str(const char* str) {
 	if(!strcmp(str, "u8")) return T_u8;
@@ -56,7 +50,37 @@ TypeKind typekind_from_str(const char* str) {
 	printf("--------------------\n");
 	return T_error;
 }
+int type_rank(TypeKind k) {
+	switch(k) {
+		case T_u8: return 1;
+		case T_i8: return 2;
+		case T_u16: return 3;
+		case T_i16: return 4;
+		case T_u32: return 5;
+		case T_i32: return 6;
+		case T_u64: return 7;
+		case T_i64: return 8;
+		case T_f32: return 9;
+		case T_f64: return 10;
+		case T_int_literal: return 0;
+		case T_float_literal: return 0;
+		default:
+			printf("Unknown type %u!\n", k);
+			return -1;
+	}
+}
 
+/* -------------------- TYPE CREATION -------------------- */
+
+static Type* type_create(TypeKind kind) {
+	Type* tmp = malloc(sizeof(*tmp));
+	if(!tmp) {
+		perror("Failed to allocate memory for Type");
+		return NULL;
+	}
+	tmp->kind = kind;
+	return tmp;
+}
 Type* type_make_primitive(TypeKind kind) {
 	switch(kind) {
 		case T_int_literal: return &TYPE_INT_LIT;
@@ -106,13 +130,6 @@ void type_function_add_param(Type* function, Type* param) {
 	}
 	function->function.param_types[function->function.param_count++] = param;
 }
-Type* type_function_param(Type* function, usize i) {
-	if(i >= function->function.param_count) {
-		printf("Invalid function parameter type index!\n");
-		return NULL;
-	}
-	return function->function.param_types[i];
-}
 Type* type_make_class(String name) {
 	Type* tmp = type_create(T_class);
 	tmp->class.name = string_dup(name);
@@ -136,6 +153,20 @@ Type* type_clone(Type* t) {
 	}
 }
 
+/* -------------------- TYPE KIND CHECKING -------------------- */
+
+bool type_is_unsigned(Type* t) {
+	switch(t->kind) {
+		case T_u8:
+		case T_u16:
+		case T_u32:
+		case T_u64:
+		case T_usize:
+			return true;
+		default:
+			return false;
+	}
+}
 bool type_is_numeric(Type* t) {
 	switch(t->kind) {
 		case T_int_literal:
@@ -175,11 +206,6 @@ bool type_is_integer(Type* t) {
 			return false;
 	}
 }
-bool type_is_array(Type* t) { return t->kind == T_array; }
-bool type_is_function(Type* t) { return t->kind == T_function; }
-bool type_is_class(Type* t) { return t->kind == T_class; }
-bool type_is_string(Type* t) { return t->kind == T_string; }
-bool type_is_void(Type* t) { return t->kind == T_void; }
 bool type_is_float(Type* t) {
 	switch(t->kind) {
 		case T_f32:
@@ -190,25 +216,13 @@ bool type_is_float(Type* t) {
 			return false;
 	}
 }
-int type_rank(TypeKind k) {
-	switch(k) {
-		case T_u8: return 1;
-		case T_i8: return 2;
-		case T_u16: return 3;
-		case T_i16: return 4;
-		case T_u32: return 5;
-		case T_i32: return 6;
-		case T_u64: return 7;
-		case T_i64: return 8;
-		case T_f32: return 9;
-		case T_f64: return 10;
-		case T_int_literal: return 0;
-		case T_float_literal: return 0;
-		default:
-			printf("Unknown type %u!\n", k);
-			return -1;
-	}
-}
+bool type_is_array(Type* t) { return t->kind == T_array; }
+bool type_is_function(Type* t) { return t->kind == T_function; }
+bool type_is_class(Type* t) { return t->kind == T_class; }
+bool type_is_string(Type* t) { return t->kind == T_string; }
+bool type_is_void(Type* t) { return t->kind == T_void; }
+
+/* -------------------- TYPE COMPATIBILITY CHECKING -------------------- */
 
 bool type_equals(Type* a, Type* b) {
 	if(a == b) return true;
@@ -230,30 +244,69 @@ bool type_equals(Type* a, Type* b) {
 			return true;
 	}
 }
-
-bool type_is_assignable(Type* a, Type* b) {
-	if(type_equals(a, b)) return true;
-	if(!a || !b) return false;
-	switch(a->kind) {
-		case T_array: return false;
-		case T_function: return false;
-		case T_class: return string_eq(a->class.name, b->class.name);
-		case T_string: return true;
-		case T_void: return false;
-		case T_int_literal: return false;
-		case T_float_literal: return false;
-		default:
-			if(type_is_numeric(a)) {
-				return type_is_numeric(b);
-			}
-			if(a->kind == T_bool) {
-				return b->kind == T_bool;
-			}
-			printf("Unknown type kind!\n");
-			return false;
-
+bool int_literal_fits(Type* t, i64 v) {
+	switch(t->kind) {
+		case T_u8: return v >= 0 && v <= 255;
+		case T_i8: return v >= -128 && v <= 127;
+		case T_u16: return v >= 0 && v <= 65535;
+		case T_i16: return v >= -32768 && v <= 32767;
+		case T_u32: return v >= 0 && (u64)v <= 4294967295ULL;
+		case T_i32: return v >= -2147483648LL && v <= 2147483647LL;
+		case T_u64: return v >= 0;
+		case T_i64: return true;
+		default: return false;
 	}
 }
+bool type_is_assignable(Type* target, Type* value) {
+	if(!target || !value) return false;
+	if(type_equals(target, value)) return true;
+
+	if(type_is_void(target)) return false;
+	if(target->kind == T_function) return false;
+	if(target->kind == T_array) return false;
+
+	if(value->kind == T_int_literal) {
+		return type_is_integer(target);
+	}
+
+	if(value->kind == T_float_literal) {
+		return type_is_float(target);
+	}
+
+	if(type_is_integer(target) && type_is_integer(value)) {
+		return type_rank(value->kind) <= type_rank(target->kind);
+	}
+	if(type_is_float(target) && type_is_float(value)) {
+		return type_rank(value->kind) <= type_rank(target->kind);
+	}
+
+	if(type_is_float(target) && type_is_integer(value)) {
+		return true;
+	}
+
+	if(target->kind == T_bool) {
+		return value->kind == T_bool;
+	}
+	if(target->kind == T_string) {
+		return value->kind == T_string;
+	}
+	if(target->kind == T_class && value->kind == T_class) {
+		return string_eq(target->class.name, value->class.name);
+	}
+	return false;
+}
+
+/* -------------------- TYPE GETTER FUNCTIONS -------------------- */
+
+Type* type_function_param(Type* function, usize i) {
+	if(i >= function->function.param_count) {
+		printf("Invalid function parameter type index!\n");
+		return NULL;
+	}
+	return function->function.param_types[i];
+}
+
+/* -------------------- OBJECT API FUNCTIONS -------------------- */
 
 void type_print(Type* t, usize l) {
 	if(!t) {
@@ -346,7 +399,6 @@ void type_print(Type* t, usize l) {
 	ptabs(l);
 	printf("--------------\n");
 }
-
 void type_free(Type* t) {
 	if(!t) return;
 	switch(t->kind) {

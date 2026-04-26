@@ -6,10 +6,11 @@
 #include "token.h"
 #include "parse.h"
 #include "ast.h"
-#include "visitor.h"
 #include "arena.h"
 #include "pass/decl_pass.h"
 #include "pass/type_pass.h"
+
+/* -------------------- COMPILER STRUCT -------------------- */
 
 typedef struct {
 	SourceFile* src;
@@ -34,19 +35,29 @@ typedef struct {
 
 } BasicCompiler;
 
+/* -------------------- COMPILER CREATION -------------------- */
+
 BasicCompiler* comp_create(void);
 void comp_free(BasicCompiler* comp);
 
+/* -------------------- SOURCE FILE API -------------------- */
+
 void comp_open_src(BasicCompiler* comp, const char* path);
 void comp_close_src(BasicCompiler* comp);
+
+/* -------------------- LEXER API -------------------- */
 
 void comp_tokenize(BasicCompiler* comp);
 void comp_print_tokens(BasicCompiler* comp);
 void comp_free_tokens(BasicCompiler* comp);
 
+/* -------------------- PARSER API -------------------- */
+
 void comp_parse(BasicCompiler* comp);
 void comp_print_ast(BasicCompiler* comp);
 void comp_free_ast(BasicCompiler* comp);
+
+/* -------------------- PASS API -------------------- */
 
 void comp_setup_symtabs(BasicCompiler* comp);
 void comp_decl_pass(BasicCompiler* comp, bool verbose);

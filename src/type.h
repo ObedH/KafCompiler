@@ -4,6 +4,8 @@
 #include "defs.h"
 #include "string.h"
 
+/* -------------------- TYPE STRUCTURE -------------------- */
+
 typedef enum {
 	T_int_literal,
 	T_float_literal,
@@ -38,28 +40,39 @@ struct Type {
 	};
 };
 
+/* -------------------- TYPE HELPER FUNCTIONS -------------------- */
+
 TypeKind typekind_from_str(const char* str);
+int type_rank(TypeKind k);
+
+/* -------------------- TYPE CREATION -------------------- */
 
 Type* type_make_primitive(TypeKind kind);
 Type* type_make_array(Type* element, usize size);
 Type* type_make_function(Type* return_type);
 void type_function_add_param(Type* fuction, Type* param);
 Type* type_make_class(String name);
-
 Type* type_clone(Type* type);
+void type_free(Type* t);
+
+/* -------------------- TYPE KIND CHECKING -------------------- */
 
 bool type_is_numeric(Type* t);
 bool type_is_integer(Type* t);
+bool type_is_unsigned(Type* t);
 bool type_is_float(Type* t);
 bool type_is_array(Type* t);
 bool type_is_function(Type* t);
 bool type_is_class(Type* t);
 bool type_is_string(Type* t);
 bool type_is_void(Type* t);
-int type_rank(TypeKind k);
+
+/* -------------------- TYPE COMPATIBILITY CHECKING -------------------- */
 
 bool type_equals(Type* a, Type* b);
 bool type_is_assignable(Type* a, Type* b);
+
+/* -------------------- TYPE GETTER FUNCTIONS -------------------- */
 
 const char* type_to_string(Type* t);
 usize type_size(Type* t);
@@ -71,6 +84,5 @@ Type* type_base(Type* t);
 usize type_array_size(Type* t);
 
 void type_print(Type* type, usize l);
-void type_free(Type* t);
 
 #endif

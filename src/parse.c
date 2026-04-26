@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
+/* -------------------- API FUNCTIONS -------------------- */
+
 Parser* parser_create(void) {
 	Parser* p = malloc(sizeof(Parser));
 	if(!p) {
@@ -13,7 +15,6 @@ Parser* parser_create(void) {
 	memset(p, 0, sizeof(Parser));
 	return p;
 }
-
 ASTNode* parser_parse(Parser* p, TokenList* tokens) {
 	p->tokens = tokens;
 	ASTNode* program_node = ast_program_node_create();
@@ -26,6 +27,9 @@ ASTNode* parser_parse(Parser* p, TokenList* tokens) {
 	}
 	return program_node;
 }
+
+/* -------------------- PARSE MISC -------------------- */
+
 ASTNode* parse_decl(Parser* p) {
 	bool public = match_keywrd(p, "export");
 	(void)public;
@@ -97,6 +101,54 @@ ASTNode* parse_param(Parser* p) {
 	ast_param_node_init(param, param_name->lexeme, param_type);
 	return param;
 }
+
+/* -------------------- PARSE STATEMENTS -------------------- */
+
+ASTNode* parse_stmt(Parser* p) {
+	Token* t = peek(p);
+	if(!strcmp(t->lexeme.data, "return")) {
+		next(p); // Consume 'return'
+
+		ASTNode* return_value = NULL;
+
+		if(!check_punct(p, ";")) {
+			return_value = parse_expr(p);
+		}
+
+		expect_punct(p, ";");
+
+		ASTNode* return_node = ast_return_node_create();
+		ast_return_node_init(return_node, return_value);
+		return return_node;
+	}
+	else if(!strcmp(t->lexeme.data, "var")) {
+		return parse_var_decl(p);
+	}
+	else if(!strcmp(t->lexeme.data, "for")) {
+		return parse_for_stmt(p);
+	}
+	else if(!strcmp(t->lexeme.data, "if")) {
+		return parse_if_stmt(p);
+	}
+	else if(!strcmp(t->lexeme.data, "while")) {
+		return parse_while_stmt(p);
+	}
+	else if(!strcmp(t->lexeme.data, "{")) {
+		next(p);
+		ASTNode* block = parse_block(p);
+		return block;
+	}
+
+	ASTNode* expr = parse_expr(p);
+	if(!expr) {
+		next(p); // Recovery
+		return NULL;
+	}
+	expect_punct(p, ";");
+	ASTNode* stmt = ast_expr_stmt_node_create(expr);
+	return stmt;
+}
+
 ASTNode* parse_block(Parser* p) {
 	ASTNode* block = ast_block_node_create();
 	block->line = prev(p)->line;
@@ -203,43 +255,9 @@ ASTNode* parse_if_stmt(Parser* p) {
 	ast_if_node_init(if_stmt, cond, then, else_b);
 	return if_stmt;
 }
-ASTNode* parse_stmt(Parser* p) {
-	Token* t = peek(p);
-	if(!strcmp(t->lexeme.data, "return")) {
-		next(p); // Consume 'return'
-		ASTNode* return_value = parse_expr(p);
-		expect_punct(p, ";");
-		ASTNode* return_node = ast_return_node_create();
-		ast_return_node_init(return_node, return_value);
-		return return_node;
-	}
-	else if(!strcmp(t->lexeme.data, "var")) {
-		return parse_var_decl(p);
-	}
-	else if(!strcmp(t->lexeme.data, "for")) {
-		return parse_for_stmt(p);
-	}
-	else if(!strcmp(t->lexeme.data, "if")) {
-		return parse_if_stmt(p);
-	}
-	else if(!strcmp(t->lexeme.data, "while")) {
-		return parse_while_stmt(p);
-	}
-	else if(!strcmp(t->lexeme.data, "{")) {
-		next(p);
-		ASTNode* block = parse_block(p);
-		return block;
-	}
 
-	ASTNode* expr = parse_expr(p);
-	if(!expr) {
-		next(p); // Recovery
-		return NULL;
-	}
-	expect_punct(p, ";");
-	ASTNode* stmt = ast_expr_stmt_node_create(expr);
-	return stmt;
-}
+/* -------------------- PARSE EXPRESSION -------------------- */
+
 ASTNode* parse_expr(Parser* p) {
 	return parse_assignment(p);
 }

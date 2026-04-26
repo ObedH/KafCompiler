@@ -11,6 +11,8 @@ void type_init(TypePass* t, Arena* arena, SymbolTable* global_symtab, bool verbo
 	t->verbose = verbose;
 }
 
+/* -------------------- HELPER FUNCTIONS -------------------- */
+
 static TypeKind max_rank(Type* a, Type* b) {
 	if(a->kind == T_error || b->kind == T_error) {
 		return (T_error);
@@ -44,7 +46,7 @@ static Type* promote_integer_type(Type* a, Type* b) {
 	return type_make_primitive(k);
 }
 
-/* ----------------------------------- BINARY TYPE CHECKING -------------------------------------- */
+/* -------------------- BINARY TYPE CHECKING -------------------- */
 
 static Type* binary_arithmetic(Type* a, Type* b) {
 	if(type_is_float(a) || type_is_float(b)) {
@@ -83,7 +85,34 @@ static Type* binary_bitwise(Type* a, Type* b) {
 	return promote_integer_type(a, b);
 }
 
-/* ----------------------------------- VISITING LOGIC -------------------------------------- */
+/* -------------------- UNARY TYPE CHECKING -------------------- */
+
+static Type* unary_negative(Type* a) {
+	if(!type_is_numeric(a)) {
+		return type_make_primitive(T_error);
+	}
+	if(a->kind == T_int_literal || a->kind == T_float_literal) {
+		return a;
+	}
+	if(type_is_unsigned(a)) {
+		return type_make_primitive(T_error);
+	}
+	return a;
+}
+static Type* unary_logical(Type* a) {
+	if(a->kind != T_bool) {
+		return type_make_primitive(T_error);
+	}
+	return a;
+}
+static Type* unary_bitwise(Type* a) {
+	if(!type_is_integer(a)) {
+		return type_make_primitive(T_error);
+	}
+	return a;
+}
+
+/* -------------------- DECLARATION VISITING LOGIC -------------------- */
 
 void type_visit_program(TypePass* t, ASTNode* program) {
 
@@ -176,6 +205,9 @@ void type_visit_func(TypePass* t, ASTNode* node) {
 	t->current_return_type = prev_return;
 
 }
+
+/* -------------------- STATEMENT VISITING LOGIC -------------------- */
+
 void type_visit_block(TypePass* t, ASTNode* node, bool is_loop) {
 	t->symtab = symtab_push(t->arena, t->symtab, is_loop ? SC_LOOP : SC_BLOCK);
 
@@ -218,16 +250,17 @@ void type_visit_return_stmt(TypePass* t, ASTNode* node) {
 		printf("---------------\n");
 	}
 }
+
+/* -------------------- EXPRESSION VISITING LOGIC -------------------- */
+
 Type* type_visit_expr(TypePass* t, ASTNode* node) {
 	switch(node->node_type) {
 		case NODE_ASSIGN_EXPR:
 			return type_visit_assign_expr(t, node);
 		case NODE_BINARY_EXPR:
 			return type_visit_binary_expr(t, node);
-			/*
 		case NODE_UNARY_EXPR:
 			return type_visit_unary_expr(t, node);
-			*/
 		case NODE_CALL_EXPR:
 			return type_visit_call_expr(t, node);
 		case NODE_LITERAL:
@@ -236,7 +269,7 @@ Type* type_visit_expr(TypePass* t, ASTNode* node) {
 			return type_visit_identifier(t, node);
 		default:
 			printf("Unknown expression type %u!\n", node->node_type);
-			return NULL;
+			return type_make_primitive(T_error);
 	}
 }
 Type* type_visit_assign_expr(TypePass* t, ASTNode* node) {
@@ -285,6 +318,20 @@ Type* type_visit_binary_expr(TypePass* t, ASTNode* node) {
 			return binary_bitwise(left_type, right_type);
 		default:
 			printf("Unkown binary operator: %u!\n", node->binary_expr.op);
+			return type_make_primitive(T_error);
+	}
+}
+Type* type_visit_unary_expr(TypePass* t, ASTNode* node) {
+	Type* operand = type_visit_expr(t, node->unary_expr.operand);
+	switch(node->unary_expr.op) {
+		case UNOP_NEG:
+			return unary_negative(operand);
+		case UNOP_LOG_NOT:
+			return unary_logical(operand);
+		case UNOP_BIT_NOT:
+			return unary_bitwise(operand);
+		default:
+			printf("Unknown unary operator: %u!\n", node->unary_expr.op);
 			return type_make_primitive(T_error);
 	}
 }

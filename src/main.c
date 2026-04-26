@@ -15,6 +15,8 @@ int main(int argc, char** argv) {
 
 		comp_tokenize(comp);
 
+		//comp_print_tokens(comp);
+
 		comp_parse(comp);
 
 		//comp_print_ast(comp);

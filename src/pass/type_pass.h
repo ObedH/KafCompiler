@@ -5,6 +5,8 @@
 #include "../arena.h"
 #include "../ast.h"
 
+/* -------------------- TYPE PASS API -------------------- */
+
 typedef struct {
 	SymbolTable* symtab;
 	Arena* arena;
@@ -15,16 +17,21 @@ typedef struct {
 } TypePass;
 void type_init(TypePass* t, Arena* arena, SymbolTable* global_symtab, bool verbose);
 
+/* -------------------- TOP LEVEL VISITING -------------------- */
+
 void type_visit_program(TypePass* t, ASTNode* node);
 void type_visit_decl(TypePass* t, ASTNode* node);
+void type_visit_func(TypePass* t, ASTNode* node);
 void type_visit_var(TypePass* t, ASTNode* node);
 
-void type_visit_func(TypePass* t, ASTNode* node);
-void type_visit_block(TypePass* t, ASTNode* node, bool is_loop);
+/* -------------------- STATEMENT VISITING -------------------- */
 
 void type_visit_stmt(TypePass* t, ASTNode* node);
+void type_visit_block(TypePass* t, ASTNode* node, bool is_loop);
 void type_visit_expr_stmt(TypePass* t, ASTNode* node);
 void type_visit_return_stmt(TypePass* t, ASTNode* node);
+
+/* -------------------- EXPRESSION VISITING -------------------- */
 
 Type* type_visit_expr(TypePass* t, ASTNode* node);
 Type* type_visit_assign_expr(TypePass* t, ASTNode* node);

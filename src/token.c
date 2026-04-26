@@ -9,11 +9,7 @@
 #include "util.h"
 #include "token_util.h"
 
-#define CUR (*p)
-#define NEXT (*(p+1))
-#define CONSUME() do { p++; col ++; } while(0)
-
-// ----------Token----------
+/* -------------------- TOKEN HELPER FUNCTIONS -------------------- */
 
 const char* tt_str(TokenType tt) {
 	switch(tt) {
@@ -66,7 +62,7 @@ void token_free(Token token) {
 	string_free(token.lexeme);
 }
 
-// ----------Token List----------
+/* -------------------- TOKEN LIST FUNCTIONS -------------------- */
 
 TokenList* token_list_create(void) {
 	TokenList* tl = malloc(sizeof(TokenList));
@@ -128,6 +124,8 @@ void token_list_free(TokenList* token_list) {
 	return;
 }
 
+/* -------------------- API FUNCTIONS -------------------- */
+
 Lexer* lexer_create(void) {
 	Lexer* tmp = malloc(sizeof(*tmp));
 	if(!tmp) {
@@ -136,6 +134,8 @@ Lexer* lexer_create(void) {
 	}
 	return tmp;
 }
+
+/* -------------------------- SCANNING ---------------------------- */
 
 static inline void advance(Lexer* l) {
 	if(*l->p == '\n') {
@@ -147,15 +147,11 @@ static inline void advance(Lexer* l) {
 	}
 	l->p++;
 }
-
-/* -------------------------- SCANNING ---------------------------- */
-
 static void scan_whitespace(Lexer* l) {
 	while(*l->p && isspace((unsigned char)*l->p)) {
 		advance(l);
 	}
 }
-
 static Token scan_identifier_or_keyword(Lexer* l) {
 	const char* start = l->p;
 	int line = l->line;
@@ -181,7 +177,6 @@ static Token scan_identifier_or_keyword(Lexer* l) {
 
 	return token_create(TT_IDENTIFIER, start, len, col, line);
 }
-
 static Token scan_operator(Lexer* l) {
 	const char* start = l->p;
 	int line = l->line;
@@ -210,7 +205,6 @@ static Token scan_operator(Lexer* l) {
 
 	return token_create(TT_OPERATOR, start, best_len, col, line);
 }
-
 static Token scan_punctuator(Lexer* l) {
 	const char* start = l->p;
 	int line = l->line;
@@ -231,7 +225,6 @@ static Token scan_punctuator(Lexer* l) {
 
 	return (Token){.token_type = TT_UNKNOWN};
 }
-
 static Token scan_number_literal(Lexer* l) {
 	const char* start = l->p;
 	int line = l->line;
@@ -256,7 +249,6 @@ static Token scan_number_literal(Lexer* l) {
 
 	return token_create(TT_INT_LITERAL, start, l->p - start, col, line);
 }
-
 static Token scan_char_literal(Lexer* l) {
 	const char* start = l->p;
 	int line = l->line;
@@ -274,7 +266,6 @@ static Token scan_char_literal(Lexer* l) {
 
 	return token_create(TT_CHAR_LITERAL, start, l->p - start, col, line);
 }
-
 static Token scan_string_literal(Lexer* l) {
 	if(*l->p != '"') {
 		return (Token){.token_type = TT_UNKNOWN};
@@ -298,7 +289,7 @@ static Token scan_string_literal(Lexer* l) {
 	return token_create(TT_STRING_LITERAL, start, l->p - start, col, line);
 }
 
-/* ---------------------------------------------------------------- */
+/* -------------------- API FUNCTIONS -------------------- */
 
 TokenList* lexer_lex_src(Lexer* l, SourceFile* src) {
 	l->src = src;
@@ -356,87 +347,3 @@ TokenList* lexer_lex_src(Lexer* l, SourceFile* src) {
 void lexer_free(Lexer* lexer) {
 	free(lexer);
 }
-
-/*
-TokenList* tokenize(char* input) {
-
-	// Initialize token list
-	TokenList* token_list = token_list_create();
-	token_list_init(token_list);
-
-	// Initialize counters and char pointer
-	char* p = input;
-	usize col = 1;
-	usize line = 1;
-
-	// Loop through input string
-	while(*p) {
-		char* start = p;
-
-		// NEWLINE
-		if(CUR == '\n') {
-			p ++;
-			line ++;
-			col = 0;
-			continue;
-		}
-		
-		// IDENTIFIER / KEYWORD
-		if(isalpha(CUR) || CUR == '_') {
-			start = p;
-			CONSUME();
-
-			while(isalnum(CUR) || CUR == '_') {
-				CONSUME();
-			}
-
-			usize len = p - start;
-			
-			if(is_keyword(start, len)) {
-				Token t = token_create(TT_KEYWORD, start, len, col, line);
-				token_list_add(token_list, t);
-			}
-			else {
-				Token t = token_create(TT_IDENTIFIER, start, len, col, line);
-				token_list_add(token_list, t);
-			}
-			continue;
-		}
-
-		// PUNCTUATOR
-		usize punctuator_len = 0;
-		if(is_punctuator(p, &punctuator_len)) {
-			Token t = token_create(TT_PUNCT, start, punctuator_len, col, line);
-			token_list_add(token_list, t);
-			p += punctuator_len;
-			col += punctuator_len;
-			continue;
-		}
-
-		// OPERATOR
-		usize operator_len = 0;
-		if(is_operator(p, &operator_len)) {
-			Token t = token_create(TT_OPERATOR, start, operator_len, col, line);
-			token_list_add(token_list, t);
-			p += operator_len;
-			col += operator_len;
-			continue;
-		}
-
-		// NUMBER LITERAL
-		usize num_len = 0;
-		if(is_number_literal(p, &num_len)) {
-			Token t = token_create(TT_CONSTANT, start, num_len, col, line);
-			token_list_add(token_list, t);
-			p += num_len;
-			col += num_len;
-			continue;
-		}
-
-		// DEFAULT
-		CONSUME();
-	}
-
-	return token_list;
-}
-*/

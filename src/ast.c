@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+/* -------------------- ENUM TO STRING HELPER FUNCTIONS -------------------- */
+
 const char* binop_str(BinOp binop) {
 	switch(binop) {
 	case BINOP_PLUS:
@@ -61,6 +63,8 @@ const char* unop_str(UnOp unop) {
 	}
 }
 
+/* -------------------- GENERIC NODE HELPER FUNCTIONS -------------------- */
+
 ASTNode* ast_node_create(void) {
 	ASTNode* node = malloc(sizeof(ASTNode));
 	if(!node) {
@@ -97,6 +101,8 @@ static void free_ast(ASTNode* ast_node) {
 	}
 	free(ast_node);
 }
+
+/* -------------------- PROGRAM NODE -------------------- */
 
 ASTNode* ast_program_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -172,6 +178,8 @@ void ast_program_node_free(ASTNode* p) {
 	free_ast(p);
 }
 
+/* -------------------- FUNCTION DECL NODE -------------------- */
+
 ASTNode* ast_func_node_create(void) {
 	ASTNode* node = ast_node_create();
 	if(!node) {
@@ -238,6 +246,9 @@ void ast_func_node_free(ASTNode* fn) {
 	free(fn->func.params);
 	free_ast(fn);
 }
+
+/* -------------------- VAR DECL NODE -------------------- */
+
 ASTNode* ast_var_node_create(void) {
 	ASTNode* node = ast_node_create();
 	node->node_type = NODE_VAR_DECL;
@@ -288,6 +299,9 @@ void ast_var_node_free(ASTNode* node) {
 	ast_expr_node_free(node->var_declr.initializer);
 	free_ast(node);
 }
+
+/* -------------------- TYPE NODE -------------------- */
+
 ASTNode* ast_type_node_create(void) {
 	ASTNode* node = ast_node_create();
 	node->node_type = NODE_TYPE_NAME;
@@ -320,6 +334,8 @@ void ast_type_node_free(ASTNode* t) {
 	string_free(t->type.name);
 	free_ast(t);
 }
+
+/* -------------------- PARAMETER NODE -------------------- */
 
 ASTNode* ast_param_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -356,6 +372,8 @@ void ast_param_node_free(ASTNode* t) {
 	string_free(t->param.name);
 	free_ast(t);
 }
+
+/* -------------------- BLOCK NODE -------------------- */
 
 ASTNode* ast_block_node_create(void) {
 	ASTNode* node = ast_node_create();
@@ -422,6 +440,8 @@ void ast_block_node_free(ASTNode* b) {
 	free_ast(b);
 }
 
+/* -------------------- STATEMENT DISPATCHERS -------------------- */
+
 void ast_stmt_node_print(ASTNode* s, usize l) {
 	if(!s) {
 		ptabs(l);
@@ -487,6 +507,8 @@ void ast_stmt_node_free(ASTNode* s) {
 	}
 }
 
+/* -------------------- RETURN STATEMENT -------------------- */
+
 ASTNode* ast_return_node_create(void) {
 	ASTNode* node = ast_node_create();
 	node->node_type = NODE_RETURN_STMT;
@@ -521,6 +543,40 @@ void ast_return_node_free(ASTNode* r) {
 	}
 	free_ast(r);
 }
+
+/* -------------------- EXPRESSION STATEMENT -------------------- */
+
+ASTNode* ast_expr_stmt_node_create(ASTNode* expr) {
+	ASTNode* node = ast_node_create();
+	node->node_type = NODE_EXPR_STMT;
+	node->expr_stmt.expr = expr;
+	return node;
+}
+void ast_expr_stmt_node_print(ASTNode* es, usize l) {
+	if(!es) {
+		ptabs(l);
+		printf("-----NULL-----\n");
+		ptabs(l);
+		printf("--------------\n");
+		return;
+	}
+	ptabs(l);
+	printf("-----EXPR STMT-----\n");
+
+	ptabs(l);
+	printf("Expression:\n");
+	ast_expr_node_print(es->expr_stmt.expr, l + 1);
+
+	ptabs(l);
+	printf("-------------------\n");
+}
+void ast_expr_stmt_node_free(ASTNode* es) {
+	ast_expr_node_free(es->expr_stmt.expr);
+	free_ast(es);
+}
+
+/* -------------------- FOR LOOP STATEMENT -------------------- */
+
 ASTNode* ast_for_node_create(void) {
 	ASTNode* tmp = ast_node_create();
 	tmp->node_type = NODE_FOR_STMT;
@@ -616,6 +672,9 @@ void ast_for_node_free(ASTNode* f) {
 	}
 	free_ast(f);
 }
+
+/* -------------------- WHILE LOOP STATEMENT -------------------- */
+
 ASTNode* ast_while_node_create(void) {
 	ASTNode* tmp = ast_node_create();
 	tmp->node_type = NODE_WHILE_STMT;
@@ -667,6 +726,9 @@ void ast_while_node_free(ASTNode* w) {
 	}
 	free_ast(w);
 }
+
+/* -------------------- IF STATEMENT -------------------- */
+
 ASTNode* ast_if_node_create(void) {
 	ASTNode* tmp = ast_node_create();
 	tmp->node_type = NODE_IF_STMT;
@@ -742,40 +804,8 @@ void ast_if_node_free(ASTNode* i) {
 	}
 	free_ast(i);
 }
-ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value) {
-	ASTNode* a = ast_node_create();
-	a->node_type = NODE_ASSIGN_EXPR;
-	a->assign_expr.target = left;
-	a->assign_expr.value = value;
-	return a;
-}
-void ast_assign_expr_node_print(ASTNode* a, usize l) {
-	if(!a) {
-		ptabs(l);
-		printf("-----NULL-----\n");
-		ptabs(l);
-		printf("--------------\n");
-		return;
-	}
-	ptabs(l);
-	printf("-----ASSIGNMENT EXPRESSION-----\n");
 
-	ptabs(l);
-	printf("Target:\n");
-	ast_expr_node_print(a->assign_expr.target, l + 1);
-
-	ptabs(l);
-	printf("Value:\n");
-	ast_expr_node_print(a->assign_expr.value, l + 1);
-
-	ptabs(l);
-	printf("-------------------------------\n");
-}
-void ast_assign_expr_node_free(ASTNode* a) {
-	ast_expr_node_free(a->assign_expr.target);
-	ast_expr_node_free(a->assign_expr.value);
-	free(a);
-}
+/* -------------------- EXPRESSION DISPATCHERS -------------------- */
 
 void ast_expr_node_print(ASTNode* i, usize l) {
 	if(!i) {
@@ -813,11 +843,11 @@ void ast_expr_node_free(ASTNode* i) {
 		return;
 	}
 	switch(i->node_type) {
-	case NODE_LITERAL:
-		ast_literal_node_free(i);
-		break;
 	case NODE_ASSIGN_EXPR:
 		ast_assign_expr_node_free(i);
+		break;
+	case NODE_LITERAL:
+		ast_literal_node_free(i);
 		break;
 	case NODE_IDENTIFIER:
 		ast_identifier_node_free(i);
@@ -836,14 +866,17 @@ void ast_expr_node_free(ASTNode* i) {
 	}
 }
 
-ASTNode* ast_expr_stmt_node_create(ASTNode* expr) {
-	ASTNode* node = ast_node_create();
-	node->node_type = NODE_EXPR_STMT;
-	node->expr_stmt.expr = expr;
-	return node;
+/* -------------------- ASSIGNMENT EXPRESSION -------------------- */
+
+ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value) {
+	ASTNode* a = ast_node_create();
+	a->node_type = NODE_ASSIGN_EXPR;
+	a->assign_expr.target = left;
+	a->assign_expr.value = value;
+	return a;
 }
-void ast_expr_stmt_node_print(ASTNode* es, usize l) {
-	if(!es) {
+void ast_assign_expr_node_print(ASTNode* a, usize l) {
+	if(!a) {
 		ptabs(l);
 		printf("-----NULL-----\n");
 		ptabs(l);
@@ -851,19 +884,26 @@ void ast_expr_stmt_node_print(ASTNode* es, usize l) {
 		return;
 	}
 	ptabs(l);
-	printf("-----EXPR STMT-----\n");
+	printf("-----ASSIGNMENT EXPRESSION-----\n");
 
 	ptabs(l);
-	printf("Expression:\n");
-	ast_expr_node_print(es->expr_stmt.expr, l + 1);
+	printf("Target:\n");
+	ast_expr_node_print(a->assign_expr.target, l + 1);
 
 	ptabs(l);
-	printf("-------------------\n");
+	printf("Value:\n");
+	ast_expr_node_print(a->assign_expr.value, l + 1);
+
+	ptabs(l);
+	printf("-------------------------------\n");
 }
-void ast_expr_stmt_node_free(ASTNode* es) {
-	ast_expr_node_free(es->expr_stmt.expr);
-	free_ast(es);
+void ast_assign_expr_node_free(ASTNode* a) {
+	ast_expr_node_free(a->assign_expr.target);
+	ast_expr_node_free(a->assign_expr.value);
+	free(a);
 }
+
+/* -------------------- LITERAL EXPRESSION -------------------- */
 
 ASTNode* ast_literal_node_create(Literal lit) {
 	ASTNode* node = ast_node_create();
@@ -892,6 +932,8 @@ void ast_literal_node_free(ASTNode* i) {
 	free_ast(i);
 }
 
+/* -------------------- IDENTIFIER EXPRESSION -------------------- */
+
 ASTNode* ast_identifier_node_create(String name) {
 	ASTNode* node = ast_node_create();
 	node->node_type = NODE_IDENTIFIER;
@@ -919,6 +961,8 @@ void ast_identifier_node_free(ASTNode* i) {
 	string_free(i->identifier.name);
 	free_ast(i);
 }
+
+/* -------------------- BINARY EXPRESSION -------------------- */
 
 ASTNode* ast_binary_expr_node_create(String lexeme, ASTNode* left, ASTNode* right) {
 	ASTNode* node = ast_node_create();
@@ -1017,6 +1061,8 @@ void ast_binary_expr_node_free(ASTNode* b) {
 	free_ast(b);
 }
 
+/* -------------------- UNARY EXPRESSION -------------------- */
+
 ASTNode* ast_unary_expr_node_create(String lexeme, ASTNode* operand) {
 	ASTNode* node = ast_node_create();
 	node->node_type = NODE_UNARY_EXPR;
@@ -1059,6 +1105,8 @@ void ast_unary_expr_node_free(ASTNode* u) {
 	ast_expr_node_free(u->unary_expr.operand);
 	free_ast(u);
 }
+
+/* -------------------- CALL EXPRESSION -------------------- */
 
 ASTNode* ast_call_expr_node_create(void) {
 	ASTNode* node = ast_node_create();

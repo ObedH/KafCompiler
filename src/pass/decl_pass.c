@@ -4,12 +4,17 @@
 #include <string.h>
 #include <stdio.h>
 
+/* -------------------- API FUNCTIONS -------------------- */
+
 void decl_init(DeclPass* d, Arena* arena, SymbolTable* global_symtab, bool verbose) {
 	memset(d, 0, sizeof(*d));
 	d->arena = arena;
 	d->symtab = global_symtab;
 	d->verbose = verbose;
 }
+
+/* -------------------- DECLARATION VISITING -------------------- */
+
 void decl_visit_program(DeclPass* d, ASTNode* program) {
 
 	if(d->verbose) printf("-----DECL PASS-----\n");
@@ -82,6 +87,13 @@ void decl_visit_var(DeclPass* d, ASTNode* node) {
 	sym->var.is_parameter = false;
 
 	Type* variable_type = resolve_type(node->var_declr.type);
+	if(type_is_void(variable_type)) {
+		printf("-----ERROR-----\n");
+		printf("Variable '%s' cannot have void type (line %u, col %u)\n", name, node->var_declr.type->line, node->var_declr.type->col);
+		printf("---------------\n");
+		type_free(variable_type);
+		variable_type = type_make_primitive(T_error);
+	}
 	sym->var.type = variable_type;
 	sym->resolved_type = variable_type;
 

@@ -7,6 +7,8 @@
 #include "string.h"
 #include "source.h"
 
+/* -------------------- DATA STRUCTURES -------------------- */
+
 typedef struct {
 	SourceFile* src;
 	const char* p;
@@ -46,6 +48,8 @@ TokenList* token_list_create(void);
 void token_list_init(TokenList* token_list);
 void token_list_print(TokenList* token_list, usize level);
 void token_list_free(TokenList* token_list);
+
+/* -------------------- API FUNCTIONS -------------------- */
 
 Lexer* lexer_create(void);
 TokenList* lexer_lex_src(Lexer* lexer, SourceFile* src_file);

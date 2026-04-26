@@ -8,6 +8,8 @@
 #include "symtab.h"
 #include "defs.h"
 
+/* -------------------- ENUMS -------------------- */
+
 typedef enum {
 	// Top level
 	NODE_PROGRAM,
@@ -66,6 +68,8 @@ typedef enum {
 	UNOP_BIT_NOT
 } UnOp;
 const char* unop_str(UnOp unop);
+
+/* -------------------- AST NODE STRUCT -------------------- */
 
 typedef struct s_ast_node {
 	NodeType node_type;
@@ -158,6 +162,8 @@ typedef struct s_ast_node {
 	};
 } ASTNode;
 
+/* -------------------- TOP LEVEL FUNCTIONS -------------------- */
+
 ASTNode* ast_node_create(void);
 void ast_node_print(ASTNode* ast_node, usize level);
 void ast_node_free(ASTNode* ast_node);
@@ -178,6 +184,8 @@ void ast_var_node_init(ASTNode* var, String name, ASTNode* type, ASTNode* initia
 void ast_var_node_print(ASTNode* var, usize level);
 void ast_var_node_free(ASTNode* var);
 
+/* -------------------- MISC NODE FUNCTIONS -------------------- */
+
 ASTNode* ast_type_node_create(void);
 void ast_type_node_init(ASTNode* t, String name);
 void ast_type_node_print(ASTNode* t, usize level);
@@ -188,13 +196,15 @@ void ast_param_node_init(ASTNode* t, String name, ASTNode* type);
 void ast_param_node_print(ASTNode* t, usize level);
 void ast_param_node_free(ASTNode* t);
 
+/* -------------------- STATEMENT NODE FUNCTIONS -------------------- */
+
+void ast_stmt_node_print(ASTNode* s, usize level);
+void ast_stmt_node_free(ASTNode* s);
+
 ASTNode* ast_block_node_create(void);
 void ast_block_node_add_stmt(ASTNode* b, ASTNode* s);
 void ast_block_node_print(ASTNode* b, usize level);
 void ast_block_node_free(ASTNode* b);
-
-void ast_stmt_node_print(ASTNode* s, usize level);
-void ast_stmt_node_free(ASTNode* s);
 
 ASTNode* ast_return_node_create(void);
 void ast_return_node_init(ASTNode* r, ASTNode* e);
@@ -215,6 +225,8 @@ ASTNode* ast_if_node_create(void);
 void ast_if_node_init(ASTNode* i, ASTNode* c, ASTNode* t, ASTNode* e);
 void ast_if_node_print(ASTNode* i, usize level);
 void ast_if_node_free(ASTNode* i);
+
+/* -------------------- EXPRESSION NODE FUNCTIONS -------------------- */
 
 void ast_expr_node_print(ASTNode* e, usize level);
 void ast_expr_node_free(ASTNode* e);

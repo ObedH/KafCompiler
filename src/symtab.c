@@ -5,6 +5,8 @@
 #include <string.h>
 #include "util.h"
 
+/* -------------------- SYMBOL CREATION ------------------- */
+
 Symbol* symbol_create(void) {
 	Symbol* tmp = malloc(sizeof(*tmp));
 	if(!tmp) {
@@ -99,6 +101,8 @@ void symbol_free(Symbol* symbol) {
 	}
 	free(symbol);
 }
+
+/* -------------------- SYMBOL TABLE API ------------------- */
 
 SymbolTable* symtab_create(Arena* arena, ScopeType sc) {
 	SymbolTable* tmp = malloc(sizeof(*tmp));

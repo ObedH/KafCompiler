@@ -7,6 +7,8 @@
 #include "arena.h"
 #include "string.h"
 
+/* -------------------- SYMBOL DATA STRUCTURES -------------------- */
+
 typedef enum {
 	SYM_FUNC,
 	SYM_VAR
@@ -50,12 +52,14 @@ void symbol_free(Symbol* symbol);
 
 typedef struct SymbolTable SymbolTable;
 
-/* SPAGHETTI STACK */
 struct SymbolTable {
 	HashMap* symbols;
 	ScopeType scope_type;
 	SymbolTable* parent;
 };
+
+/* -------------------- SYMBOL TABLE API -------------------- */
+
 SymbolTable* symtab_create(Arena* arena, ScopeType scope_type);
 void symtab_free(SymbolTable* symtab);
 
@@ -65,7 +69,5 @@ void symtab_insert(SymbolTable* table, const char* name, Symbol* symbol);
 
 SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType scope_type);
 SymbolTable* symtab_pop(SymbolTable* current);
-
-
 
 #endif

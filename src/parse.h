@@ -13,6 +13,8 @@ typedef struct {
 	struct BasicCompiler* comp;
 } Parser;
 
+/* -------------------- TOKEN HELPER FUNCTIONS -------------------- */
+
 static inline Token* peek(Parser* p) {
 	if(p->pos < p->tokens->count) {
 		return &p->tokens->head[p->pos];
@@ -92,19 +94,28 @@ static inline bool check_keywrd(Parser* p, const char* keywrd) {
 	return (t && t->token_type == TT_KEYWORD && !strcmp(t->lexeme.data, keywrd));
 }
 
+/* -------------------- API FUNCTIONS -------------------- */
+
 Parser* parser_create(void);
 void parser_free(Parser* parser);
 ASTNode* parser_parse(Parser* p, TokenList* tokens);
 
+/* -------------------- PARSE MISC -------------------- */
+
 ASTNode* parse_decl(Parser* p);
 ASTNode* parse_type(Parser* p);
 ASTNode* parse_param(Parser* p);
+
+/* -------------------- PARSE STATEMENT -------------------- */
+
+ASTNode* parse_stmt(Parser* p);
 ASTNode* parse_block(Parser* p);
-ASTNode* parse_var_decl(Parser* p);
 ASTNode* parse_for_stmt(Parser* p);
 ASTNode* parse_while_stmt(Parser* p);
 ASTNode* parse_if_stmt(Parser* p);
-ASTNode* parse_stmt(Parser* p);
+ASTNode* parse_var_decl(Parser* p);
+
+/* -------------------- PARSE EXPRESSION -------------------- */
 
 ASTNode* parse_expr(Parser* p);
 ASTNode* parse_assignment(Parser* p);
