@@ -21,10 +21,16 @@ const char* tt_str(TokenType tt) {
 			return "IDENTIFIER";
 		case TT_KEYWORD:
 			return "KEYWORD";
-		case TT_CONSTANT:
-			return "CONSTANT";
+		case TT_INT_LITERAL:
+			return "INT LITERAL";
+		case TT_FLOAT_LITERAL:
+			return "FLOAT LITERAL";
 		case TT_STRING_LITERAL:
 			return "STRING LITERAL";
+		case TT_CHAR_LITERAL:
+			return "CHAR LITERAL";
+		case TT_BOOL_LITERAL:
+			return "BOOL LITERAL";
 		case TT_PUNCT:
 			return "PUNCTUATOR";
 		case TT_OPERATOR:
@@ -34,10 +40,10 @@ const char* tt_str(TokenType tt) {
 	}
 }
 
-Token token_create(TokenType tt, char* lexeme, usize lexeme_len, usize col, usize line) {
+Token token_create(TokenType tt, const char* lexeme, usize lexeme_len, usize col, usize line) {
 	Token token = {0};
 	token.token_type = tt;
-	token.lexeme = string_create(lexeme, lexeme_len);
+	token.lexeme = string_create((char*)lexeme, lexeme_len);
 	token.col = col;
 	token.line = line;
 	return token;
@@ -122,28 +128,236 @@ void token_list_free(TokenList* token_list) {
 	return;
 }
 
-TokenScanner* tokscan_create(void) {
-	TokenScanner* tmp = malloc(sizeof(*tmp));
+Lexer* lexer_create(void) {
+	Lexer* tmp = malloc(sizeof(*tmp));
 	if(!tmp) {
-		perror("Failed to allocate memory for Token Scanner!");
+		perror("Failed to allocate memory for Lexer!");
 		return NULL;
 	}
 	return tmp;
 }
-TokenList* tokscan_scan_src(TokenScanner* tokscan, SourceFile* src) {
-	tokscan->src = src;
-	tokscan->start = src->file_contents;
-	tokscan->current = src->file_contents;
-	tokscan->line = 1;
-	tokscan->col = 1;
 
-	return tokenize((char*)tokscan->src->file_contents);
+static inline void advance(Lexer* l) {
+	if(*l->p == '\n') {
+		l->line ++;
+		l->col = 1;
+	}
+	else {
+		l->col ++;
+	}
+	l->p++;
 }
-void tokscan_free(TokenScanner* tokscan) {
-	free(tokscan);
+
+/* -------------------------- SCANNING ---------------------------- */
+
+static void scan_whitespace(Lexer* l) {
+	while(*l->p && isspace((unsigned char)*l->p)) {
+		advance(l);
+	}
 }
 
+static Token scan_identifier_or_keyword(Lexer* l) {
+	const char* start = l->p;
+	int line = l->line;
+	int col = l->col;
 
+	if(!isalpha(*l->p) && *l->p != '_') {
+		return (Token){.token_type = TT_UNKNOWN};
+	}
+
+	while(isalnum(*l->p) || *l->p == '_') {
+		advance(l);
+	}
+
+	usize len = l->p - start;
+
+	if(is_bool_literal(start, len)) {
+		return token_create(TT_BOOL_LITERAL, start, len, col, line);
+	}
+
+	if(is_keyword(start, len)) {
+		return token_create(TT_KEYWORD, start, len, col, line);
+	}
+
+	return token_create(TT_IDENTIFIER, start, len, col, line);
+}
+
+static Token scan_operator(Lexer* l) {
+	const char* start = l->p;
+	int line = l->line;
+	int col = l->col;
+
+	usize best_len = 0;
+
+	for(usize i = 0; i < NUM_OPERATORS; i ++) {
+		const char* op = operators[i];
+		usize len = strlen(op);
+
+		if(strncmp(l->p, op, len) == 0) {
+			if(len > best_len) {
+				best_len = len;
+			}
+		}
+	}
+
+	if(best_len == 0) {
+		return (Token){.token_type = TT_UNKNOWN};
+	}
+	
+	for(usize i = 0; i < best_len; i ++) {
+		advance(l);
+	}
+
+	return token_create(TT_OPERATOR, start, best_len, col, line);
+}
+
+static Token scan_punctuator(Lexer* l) {
+	const char* start = l->p;
+	int line = l->line;
+	int col = l->col;
+
+	for(usize i = 0; i < NUM_PUNCTUATORS; i ++) {
+		const char* punc = punctuators[i];
+		usize len = strlen(punc);
+
+		if(strncmp(l->p, punc, len) == 0) {
+			for(usize j = 0; j < len; j ++) {
+				advance(l);
+			}
+
+			return token_create(TT_PUNCT, start, len, col, line);
+		}
+	}
+
+	return (Token){.token_type = TT_UNKNOWN};
+}
+
+static Token scan_number_literal(Lexer* l) {
+	const char* start = l->p;
+	int line = l->line;
+	int col = l->col;
+
+	if(!isdigit(*l->p)) {
+		return (Token) {.token_type = TT_UNKNOWN};
+	}
+
+	while(isdigit(*l->p)) {
+		advance(l);
+	}
+
+	if(*l->p == '.' && isdigit(*(l->p + 1))) {
+		advance(l);
+		while(isdigit(*l->p)) {
+			advance(l);
+		}
+
+		return token_create(TT_FLOAT_LITERAL, start, l->p - start, col, line);
+	}
+
+	return token_create(TT_INT_LITERAL, start, l->p - start, col, line);
+}
+
+static Token scan_char_literal(Lexer* l) {
+	const char* start = l->p;
+	int line = l->line;
+	int col = l->col;
+
+	if(*l->p != '\'') {
+		return (Token) {.token_type = TT_UNKNOWN};
+	}
+	advance(l);
+	advance(l);
+	if(*l->p != '\'') {
+		return (Token) {.token_type = TT_UNKNOWN};
+	}
+	advance(l);
+
+	return token_create(TT_CHAR_LITERAL, start, l->p - start, col, line);
+}
+
+static Token scan_string_literal(Lexer* l) {
+	if(*l->p != '"') {
+		return (Token){.token_type = TT_UNKNOWN};
+	}
+
+	const char* start = l->p;
+	int line = l->line;
+	int col = l->col;
+
+	advance(l);
+
+	while(*l->p && *l->p != '"') {
+		if(*l->p == '\\') advance(l);
+		advance(l);
+	}
+
+	if(*l->p == '"') {
+		advance(l);
+	}
+
+	return token_create(TT_STRING_LITERAL, start, l->p - start, col, line);
+}
+
+/* ---------------------------------------------------------------- */
+
+TokenList* lexer_lex_src(Lexer* l, SourceFile* src) {
+	l->src = src;
+	l->p = src->file_contents;
+	l->line = 1;
+	l->col = 1;
+
+	TokenList* list = token_list_create();
+	token_list_init(list);
+
+
+	while(*l->p) {
+		if(isspace(*l->p)) {
+			scan_whitespace(l);
+			continue;
+		}
+
+		Token t;
+
+		if((t = scan_identifier_or_keyword(l)).token_type != TT_UNKNOWN) {
+			token_list_add(list, t);
+			continue;
+		}
+
+		if((t = scan_number_literal(l)).token_type != TT_UNKNOWN) {
+			token_list_add(list, t);
+			continue;
+		}
+
+		if((t = scan_string_literal(l)).token_type != TT_UNKNOWN) {
+			token_list_add(list, t);
+			continue;
+		}
+
+		if((t = scan_char_literal(l)).token_type != TT_UNKNOWN) {
+			token_list_add(list, t);
+			continue;
+		}
+		
+		if((t = scan_operator(l)).token_type != TT_UNKNOWN) {
+			token_list_add(list, t);
+			continue;
+		}
+
+		if((t = scan_punctuator(l)).token_type != TT_UNKNOWN) {
+			token_list_add(list, t);
+			continue;
+		}
+
+		advance(l);
+	}
+
+	return list;
+}
+void lexer_free(Lexer* lexer) {
+	free(lexer);
+}
+
+/*
 TokenList* tokenize(char* input) {
 
 	// Initialize token list
@@ -225,3 +439,4 @@ TokenList* tokenize(char* input) {
 
 	return token_list;
 }
+*/

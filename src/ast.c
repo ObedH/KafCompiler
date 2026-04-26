@@ -786,8 +786,8 @@ void ast_expr_node_print(ASTNode* i, usize l) {
 		return;
 	}
 	switch(i->node_type) {
-	case NODE_LITERAL_INT:
-		ast_literal_int_node_print(i, l);
+	case NODE_LITERAL:
+		ast_literal_node_print(i, l);
 		break;
 	case NODE_ASSIGN_EXPR:
 		ast_assign_expr_node_print(i, l);
@@ -813,8 +813,8 @@ void ast_expr_node_free(ASTNode* i) {
 		return;
 	}
 	switch(i->node_type) {
-	case NODE_LITERAL_INT:
-		ast_literal_int_node_free(i);
+	case NODE_LITERAL:
+		ast_literal_node_free(i);
 		break;
 	case NODE_ASSIGN_EXPR:
 		ast_assign_expr_node_free(i);
@@ -865,13 +865,13 @@ void ast_expr_stmt_node_free(ASTNode* es) {
 	free_ast(es);
 }
 
-ASTNode* ast_literal_int_node_create(usize int_value) {
+ASTNode* ast_literal_node_create(Literal lit) {
 	ASTNode* node = ast_node_create();
-	node->node_type = NODE_LITERAL_INT;
-	node->literal_int.value = int_value;
+	node->node_type = NODE_LITERAL;
+	node->literal.lit = lit;
 	return node;
 }
-void ast_literal_int_node_print(ASTNode* i, usize l) {
+void ast_literal_node_print(ASTNode* i, usize l) {
 	if(!i) {
 		ptabs(l);
 		printf("-----NULL-----\n");
@@ -880,15 +880,15 @@ void ast_literal_int_node_print(ASTNode* i, usize l) {
 		return;
 	}
 	ptabs(l);
-	printf("-----INT LITERAL-----\n");
+	printf("-----LITERAL-----\n");
 
 	ptabs(l);
-	printf("Value: %u\n", i->literal_int.value);
+	printf("Value: %d\n", (int)i->literal.lit.int_value);
 
 	ptabs(l);
 	printf("---------------------\n");
 }
-void ast_literal_int_node_free(ASTNode* i) {
+void ast_literal_node_free(ASTNode* i) {
 	free_ast(i);
 }
 

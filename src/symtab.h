@@ -13,11 +13,16 @@ typedef enum {
 } SymbolType;
 typedef enum {
 	SC_GLOBAL,
-	SC_BLOCK
+	SC_BLOCK,
+	SC_FUNCTION,
+	SC_LOOP
 } ScopeType;
 
 typedef struct {
 	SymbolType type;
+
+	Type* resolved_type;
+
 	union {
 		struct {
 			struct s_ast_node* node;
@@ -32,7 +37,6 @@ typedef struct {
 			Type** param_types;
 			String* param_names;
 			usize param_count;
-			usize param_capacity;
 			bool is_defined;
 			String label;
 		} func;
@@ -51,16 +55,15 @@ struct SymbolTable {
 	HashMap* symbols;
 	ScopeType scope_type;
 	SymbolTable* parent;
-	bool is_loop;
 };
-SymbolTable* symtab_create(Arena* arena, ScopeType, bool is_loop);
+SymbolTable* symtab_create(Arena* arena, ScopeType scope_type);
 void symtab_free(SymbolTable* symtab);
 
 Symbol* symtab_lookup(SymbolTable* table, const char* name);
 Symbol* symtab_lookup_current(SymbolTable* table, const char* name);
 void symtab_insert(SymbolTable* table, const char* name, Symbol* symbol);
 
-SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType scope_type, bool is_loop);
+SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType scope_type);
 SymbolTable* symtab_pop(SymbolTable* current);
 
 

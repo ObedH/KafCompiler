@@ -15,13 +15,12 @@ Symbol* symbol_create(void) {
 	return tmp;
 }
 void symbol_func_init(Symbol* symbol) {
-	symbol->func.param_capacity = 16;
 	symbol->func.param_count = 0;
 	symbol->func.param_types = malloc(sizeof(Type*) * 16);
 	symbol->func.param_names = malloc(sizeof(String) * 16);
 }
 void symbol_func_add_param(Symbol* symbol, Type* type, String name) {
-	if(symbol->func.param_count == symbol->func.param_capacity) {
+	if(symbol->func.param_count == 16) {
 		printf("Out of space for function parameters!\n");
 		return;
 	}
@@ -65,7 +64,17 @@ void symbol_print(Symbol* symbol, usize l) {
 		}
 	}
 	else if(symbol->type == SYM_VAR) {
-
+		ptabs(l);
+		printf("Type: Variable\n");
+		ptabs(l);
+		printf("Variable type:\n");
+		type_print(symbol->var.type, l + 1);
+		ptabs(l);
+		printf("Stack offset: %d\n", symbol->var.stack_offset);
+		ptabs(l);
+		printf("Has initializer: %s\n", symbol->var.has_initializer ? "true" : "false");
+		ptabs(l);
+		printf("Is parameter: %s\n", symbol->var.is_parameter ? "true" : "false");
 	}
 	else {
 		ptabs(l);
@@ -91,7 +100,7 @@ void symbol_free(Symbol* symbol) {
 	free(symbol);
 }
 
-SymbolTable* symtab_create(Arena* arena, ScopeType sc, bool is_loop) {
+SymbolTable* symtab_create(Arena* arena, ScopeType sc) {
 	SymbolTable* tmp = malloc(sizeof(*tmp));
 	if(!tmp) {
 		printf("Failed to allocate memory for symbol table!\n");
@@ -100,7 +109,6 @@ SymbolTable* symtab_create(Arena* arena, ScopeType sc, bool is_loop) {
 	memset(tmp, 0, sizeof(*tmp));
 	tmp->symbols = hashmap_create();
 	tmp->scope_type = sc;
-	tmp->is_loop = is_loop;
 	arena_add_object(arena, tmp);
 	return tmp;
 }
@@ -127,12 +135,16 @@ void symtab_insert(SymbolTable* table, const char* name, Symbol* symbol) {
 	hashmap_put(table->symbols, name, symbol);
 }
 
-SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType sc, bool is_loop) {
-	SymbolTable* new_symtab = symtab_create(arena, sc, is_loop);
+SymbolTable* symtab_push(Arena* arena, SymbolTable* current, ScopeType sc) {
+	SymbolTable* new_symtab = symtab_create(arena, sc);
 	new_symtab->parent = current;
 
 	return new_symtab;
 }
 SymbolTable* symtab_pop(SymbolTable* current) {
+	if(!current) {
+		printf("Null current symtab!\n");
+		return NULL;
+	}
 	return current->parent;
 }

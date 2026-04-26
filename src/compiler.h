@@ -14,7 +14,7 @@
 typedef struct {
 	SourceFile* src;
 
-	TokenScanner* token_scanner;
+	Lexer* lexer;
 	TokenList* token_list;
 
 	Parser* parser;
@@ -22,6 +22,7 @@ typedef struct {
 
 	Arena* symtab_arena;
 
+	SymbolTable* global_symtab;
 	DeclPass decl_pass;
 	TypePass type_pass;
 
@@ -48,9 +49,8 @@ void comp_print_ast(BasicCompiler* comp);
 void comp_free_ast(BasicCompiler* comp);
 
 void comp_setup_symtabs(BasicCompiler* comp);
-void comp_decl_pass(BasicCompiler* comp);
-void comp_type_pass(BasicCompiler* comp);
-void comp_type_pass_verbose(BasicCompiler* comp);
+void comp_decl_pass(BasicCompiler* comp, bool verbose);
+void comp_type_pass(BasicCompiler* comp, bool verbose);
 void comp_free_symtabs(BasicCompiler* comp);
 
 #endif

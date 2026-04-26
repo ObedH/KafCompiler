@@ -9,19 +9,6 @@ static const char* keywords[] = {
 	"fn",
 	"export",
 	"var",
-	"u8", 
-	"i8", 
-	"u16", 
-	"i16", 
-	"u32", 
-	"i32", 
-	"f32", 
-	"u64", 
-	"i64", 
-	"f64", 
-	"String",
-	"usize", 
-	"isize", 
 	"const", 
 	"continue", 
 	"default", 
@@ -154,6 +141,10 @@ bool is_number_literal(const char* src, usize* out_len) {
 	*out_len = i;
 
 	return true;
+}
+
+bool is_bool_literal(const char* s, usize len) {
+	return (len == 4 && strncmp(s, "true", 4) == 0) || (len == 5 && strncmp(s, "false", 5) == 0);
 }
 
 

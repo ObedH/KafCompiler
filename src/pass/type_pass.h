@@ -10,19 +10,28 @@ typedef struct {
 	Arena* arena;
 
 	bool verbose;
+	Type* current_return_type;
+	Type* prev_return_type;
 } TypePass;
-void type_init(TypePass* t, bool verbose, Arena* arena);
+void type_init(TypePass* t, Arena* arena, SymbolTable* global_symtab, bool verbose);
+
 void type_visit_program(TypePass* t, ASTNode* node);
 void type_visit_decl(TypePass* t, ASTNode* node);
+void type_visit_var(TypePass* t, ASTNode* node);
+
 void type_visit_func(TypePass* t, ASTNode* node);
-Type* type_visit_type(TypePass* t, ASTNode* node);
 void type_visit_block(TypePass* t, ASTNode* node, bool is_loop);
+
+void type_visit_stmt(TypePass* t, ASTNode* node);
+void type_visit_expr_stmt(TypePass* t, ASTNode* node);
+void type_visit_return_stmt(TypePass* t, ASTNode* node);
+
 Type* type_visit_expr(TypePass* t, ASTNode* node);
 Type* type_visit_assign_expr(TypePass* t, ASTNode* node);
 Type* type_visit_binary_expr(TypePass* t, ASTNode* node);
 Type* type_visit_unary_expr(TypePass* t, ASTNode* node);
 Type* type_visit_call_expr(TypePass* t, ASTNode* node);
-Type* type_visit_literal_int(TypePass* t, ASTNode* node);
+Type* type_visit_literal(TypePass* t, ASTNode* node);
 Type* type_visit_identifier(TypePass* t, ASTNode* node);
 
 

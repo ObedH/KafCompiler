@@ -4,6 +4,8 @@
 #include "util.h"
 #include <string.h>
 
+static Type TYPE_INT_LIT = {.kind=T_int_literal};
+static Type TYPE_FLOAT_LIT = {.kind=T_float_literal};
 static Type TYPE_U8 = {.kind=T_u8};
 static Type TYPE_I8 = {.kind=T_i8};
 static Type TYPE_U16 = {.kind=T_u16};
@@ -17,6 +19,7 @@ static Type TYPE_F64 = {.kind=T_f64};
 static Type TYPE_USIZE = {.kind=T_usize};
 static Type TYPE_ISIZE = {.kind=T_isize};
 static Type TYPE_STRING = {.kind=T_string};
+static Type TYPE_CHAR = {.kind=T_char};
 static Type TYPE_VOID = {.kind=T_void};
 static Type TYPE_BOOL = {.kind=T_bool};
 static Type TYPE_ERROR = {.kind=T_error};
@@ -45,6 +48,7 @@ TypeKind typekind_from_str(const char* str) {
 	if(!strcmp(str, "usize")) return T_usize;
 	if(!strcmp(str, "isize")) return T_isize;
 	if(!strcmp(str, "string")) return T_string;
+	if(!strcmp(str, "char")) return T_char;
 	if(!strcmp(str, "bool")) return T_bool;
 	if(!strcmp(str, "void")) return T_void;
 	printf("-----TYPE ERROR-----\n");
@@ -55,6 +59,8 @@ TypeKind typekind_from_str(const char* str) {
 
 Type* type_make_primitive(TypeKind kind) {
 	switch(kind) {
+		case T_int_literal: return &TYPE_INT_LIT;
+		case T_float_literal: return &TYPE_FLOAT_LIT;
 		case T_u8: return &TYPE_U8;
 		case T_i8: return &TYPE_I8;
 		case T_u16: return &TYPE_U16;
@@ -68,6 +74,7 @@ Type* type_make_primitive(TypeKind kind) {
 		case T_usize: return &TYPE_USIZE;
 		case T_isize: return &TYPE_ISIZE;
 		case T_string: return &TYPE_STRING;
+		case T_char: return &TYPE_CHAR;
 		case T_bool: return &TYPE_BOOL;
 		case T_void: return &TYPE_VOID;
 		case T_error: return &TYPE_ERROR;
@@ -111,9 +118,28 @@ Type* type_make_class(String name) {
 	tmp->class.name = string_dup(name);
 	return tmp;
 }
+Type* type_clone(Type* t) {
+	if(!t) return NULL;
+	switch(t->kind) {
+		case T_array:
+			return type_make_array(t->array.element, t->array.size);
+		case T_function:
+			{
+			Type* func = type_make_function(t->function.return_type);
+			for(usize i = 0; i < t->function.param_count; i ++) {
+				type_function_add_param(func, t->function.param_types[i]);
+			}
+			return func;
+			}
+		default:
+			return type_make_primitive(t->kind);
+	}
+}
 
 bool type_is_numeric(Type* t) {
 	switch(t->kind) {
+		case T_int_literal:
+		case T_float_literal:
 		case T_u8:
 		case T_i8:
 		case T_u16:
@@ -133,6 +159,7 @@ bool type_is_numeric(Type* t) {
 }
 bool type_is_integer(Type* t) {
 	switch(t->kind) {
+		case T_int_literal:
 		case T_u8:
 		case T_i8:
 		case T_u16:
@@ -153,6 +180,35 @@ bool type_is_function(Type* t) { return t->kind == T_function; }
 bool type_is_class(Type* t) { return t->kind == T_class; }
 bool type_is_string(Type* t) { return t->kind == T_string; }
 bool type_is_void(Type* t) { return t->kind == T_void; }
+bool type_is_float(Type* t) {
+	switch(t->kind) {
+		case T_f32:
+		case T_f64:
+		case T_float_literal:
+			return true;
+		default:
+			return false;
+	}
+}
+int type_rank(TypeKind k) {
+	switch(k) {
+		case T_u8: return 1;
+		case T_i8: return 2;
+		case T_u16: return 3;
+		case T_i16: return 4;
+		case T_u32: return 5;
+		case T_i32: return 6;
+		case T_u64: return 7;
+		case T_i64: return 8;
+		case T_f32: return 9;
+		case T_f64: return 10;
+		case T_int_literal: return 0;
+		case T_float_literal: return 0;
+		default:
+			printf("Unknown type %u!\n", k);
+			return -1;
+	}
+}
 
 bool type_equals(Type* a, Type* b) {
 	if(a == b) return true;
@@ -181,9 +237,11 @@ bool type_is_assignable(Type* a, Type* b) {
 	switch(a->kind) {
 		case T_array: return false;
 		case T_function: return false;
-		case T_class: return true;
+		case T_class: return string_eq(a->class.name, b->class.name);
 		case T_string: return true;
 		case T_void: return false;
+		case T_int_literal: return false;
+		case T_float_literal: return false;
 		default:
 			if(type_is_numeric(a)) {
 				return type_is_numeric(b);
@@ -192,7 +250,7 @@ bool type_is_assignable(Type* a, Type* b) {
 				return b->kind == T_bool;
 			}
 			printf("Unknown type kind!\n");
-			return false
+			return false;
 
 	}
 }
@@ -235,6 +293,8 @@ void type_print(Type* t, usize l) {
 			ptabs(l);
 			printf("Name: %s\n", t->class.name.data);
 			break;
+		case T_int_literal:
+		case T_float_literal:
 		case T_u8:
 		case T_i8:
 		case T_u16:
@@ -250,11 +310,14 @@ void type_print(Type* t, usize l) {
 		case T_bool:
 		case T_string:
 		case T_void:
+		case T_char:
 			ptabs(l);
 			printf("Kind: Primitive\n");
 			ptabs(l);
 			printf("Base: ");
 			switch(t->kind) {
+				case T_int_literal: printf("int literal"); break;
+				case T_float_literal: printf("float literal"); break;
 				case T_u8: printf("u8"); break;
 				case T_i8: printf("i8"); break;
 				case T_u16: printf("u16"); break;
@@ -270,6 +333,7 @@ void type_print(Type* t, usize l) {
 				case T_void: printf("void"); break;
 				case T_bool: printf("bool"); break;
 				case T_string: printf("string"); break;
+				case T_char: printf("char"); break;
 				default: printf("Unkown type"); break;
 			}
 			putchar('\n');

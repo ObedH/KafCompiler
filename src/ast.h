@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include "token.h"
 #include "type.h"
+#include "literal.h"
 #include "symtab.h"
 #include "defs.h"
 
@@ -31,7 +32,7 @@ typedef enum {
 	NODE_CALL_EXPR,
 
 	// Primary expressions
-	NODE_LITERAL_INT,
+	NODE_LITERAL,
 	NODE_IDENTIFIER,
 
 	// Types
@@ -145,8 +146,8 @@ typedef struct s_ast_node {
 		} call_expr;
 
 		struct {
-			usize value;
-		} literal_int;
+			Literal lit;
+		} literal;
 		struct {
 			String name;
 		} identifier;
@@ -226,9 +227,9 @@ ASTNode* ast_assign_expr_node_create(ASTNode* left, ASTNode* value);
 void ast_assign_expr_node_print(ASTNode* a, usize level);
 void ast_assign_expr_node_free(ASTNode* a);
 
-ASTNode* ast_literal_int_node_create(usize value);
-void ast_literal_int_node_print(ASTNode* i, usize level);
-void ast_literal_int_node_free(ASTNode* i);
+ASTNode* ast_literal_node_create(Literal lit);
+void ast_literal_node_print(ASTNode* i, usize level);
+void ast_literal_node_free(ASTNode* i);
 
 ASTNode* ast_identifier_node_create(String name);
 void ast_identifier_node_print(ASTNode* i, usize level);

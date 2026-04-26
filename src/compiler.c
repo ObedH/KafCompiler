@@ -23,9 +23,9 @@ void comp_tokenize(BasicCompiler* comp) {
 		perror("No source file provided!");
 		return;
 	}
-	comp->token_scanner = tokscan_create();
-	comp->token_list = tokscan_scan_src(comp->token_scanner, comp->src);
-	tokscan_free(comp->token_scanner);
+	comp->lexer = lexer_create();
+	comp->token_list = lexer_lex_src(comp->lexer, comp->src);
+	lexer_free(comp->lexer);
 	comp->has_tokens = true;
 }
 void comp_print_tokens(BasicCompiler* comp) {
@@ -70,30 +70,23 @@ void comp_free_ast(BasicCompiler* comp) {
 }
 void comp_setup_symtabs(BasicCompiler* comp) {
 	comp->symtab_arena = arena_create();
+	comp->global_symtab = symtab_create(comp->symtab_arena, SC_GLOBAL);
 }
-void comp_decl_pass(BasicCompiler* comp) {
+void comp_decl_pass(BasicCompiler* comp, bool verbose) {
 	if(!comp->has_ast) {
 		printf("No AST provided!\n");
 		return;
 	}
 
-	decl_init(&comp->decl_pass, comp->symtab_arena);
-	decl_visit_program(&comp->decl_pass.base, comp->root);
+	decl_init(&comp->decl_pass, comp->symtab_arena, comp->global_symtab, verbose);
+	decl_visit_program(&comp->decl_pass, comp->root);
 }
-void comp_type_pass(BasicCompiler* comp) {
+void comp_type_pass(BasicCompiler* comp, bool verbose) {
 	if(!comp->has_ast) {
 		printf("No AST provided!\n");
 		return;
 	}
-	type_init(&comp->type_pass, false, comp->symtab_arena);
-	type_visit_program(&comp->type_pass, comp->root);
-}
-void comp_type_pass_verbose(BasicCompiler* comp) {
-	if(!comp->has_ast) {
-		printf("No AST provided!\n");
-		return;
-	}
-	type_init(&comp->type_pass, true, comp->symtab_arena);
+	type_init(&comp->type_pass, comp->symtab_arena, comp->global_symtab, verbose);
 	type_visit_program(&comp->type_pass, comp->root);
 }
 void comp_free_symtabs(BasicCompiler* comp) {
