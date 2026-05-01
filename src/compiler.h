@@ -9,6 +9,7 @@
 #include "arena.h"
 #include "pass/decl_pass.h"
 #include "pass/type_pass.h"
+#include "pass/ir_pass.h"
 
 /* -------------------- COMPILER STRUCT -------------------- */
 
@@ -26,12 +27,16 @@ typedef struct {
 	SymbolTable* global_symtab;
 	DeclPass decl_pass;
 	TypePass type_pass;
+	IRPass ir_pass;
 
 	bool had_token_error;
 	bool had_parse_error;
 	bool has_source;
 	bool has_tokens;
 	bool has_ast;
+	bool has_decl_pass;
+	bool has_type_pass;
+	bool has_ir_pass;
 
 } BasicCompiler;
 
@@ -62,6 +67,8 @@ void comp_free_ast(BasicCompiler* comp);
 void comp_setup_symtabs(BasicCompiler* comp);
 void comp_decl_pass(BasicCompiler* comp, bool verbose);
 void comp_type_pass(BasicCompiler* comp, bool verbose);
+void comp_ir_pass(BasicCompiler* comp, bool verbose);
+void comp_ir_nodes_free(BasicCompiler* comp);
 void comp_free_symtabs(BasicCompiler* comp);
 
 #endif

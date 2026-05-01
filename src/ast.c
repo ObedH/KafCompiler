@@ -6,6 +6,47 @@
 
 /* -------------------- ENUM TO STRING HELPER FUNCTIONS -------------------- */
 
+const char* node_type_str(NodeType n) {
+	switch(n) {
+		case NODE_PROGRAM:
+			return "PROGRAM";
+		case NODE_FUNCTION:
+			return "FUNCTION";
+		case NODE_VAR_DECL:
+			return "VARIABLE";
+		case NODE_PARAM:
+			return "PARAMETER";
+		case NODE_BLOCK:
+			return "BLOCK";
+		case NODE_RETURN_STMT:
+			return "RETURN";
+		case NODE_IF_STMT:
+			return "IF";
+		case NODE_WHILE_STMT:
+			return "WHILE";
+		case NODE_FOR_STMT:
+			return "FOR";
+		case NODE_EXPR_STMT:
+			return "EXPRESSION STATEMENT";
+		case NODE_ASSIGN_EXPR:
+			return "ASSIGN EXPRESSION";
+		case NODE_BINARY_EXPR:
+			return "BINARY EXPRESSION";
+		case NODE_UNARY_EXPR:
+			return "UNARY EXPRESSION";
+		case NODE_CALL_EXPR:
+			return "CALL EXPRESSION";
+		case NODE_LITERAL:
+			return "LITERAL";
+		case NODE_IDENTIFIER:
+			return "IDENTIFIER";
+		case NODE_TYPE_NAME:
+			return "TYPE";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 const char* binop_str(BinOp binop) {
 	switch(binop) {
 	case BINOP_PLUS:

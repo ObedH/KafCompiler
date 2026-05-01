@@ -10,6 +10,7 @@ typedef enum {
 	LIT_BOOL,
 	LIT_CHAR
 } LiteralKind;
+const char* lit_type_str(LiteralKind k);
 
 typedef struct {
 	LiteralKind kind;

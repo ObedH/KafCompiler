@@ -24,6 +24,9 @@ int main(int argc, char** argv) {
 		comp_setup_symtabs(comp);
 		comp_decl_pass(comp, false);
 		comp_type_pass(comp, false);
+		comp_ir_pass(comp, true);
+
+		comp_ir_nodes_free(comp);
 
 		comp_free_symtabs(comp);
 		

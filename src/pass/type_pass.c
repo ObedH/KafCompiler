@@ -134,7 +134,7 @@ void type_visit_decl(TypePass* t, ASTNode* decl) {
 			type_visit_func(t, decl);
 			break;
 		default:
-			printf("Expected a delcaration when walking program AST!\n");
+			printf("Unknown declaration type %s!\n", node_type_str(decl->node_type));
 			break;
 	}
 }
@@ -142,10 +142,33 @@ void type_visit_var(TypePass* t, ASTNode* node) {
 	if(!t) return;
 	
 	const char* name = node->var_declr.name.data;
-	Symbol* sym = symtab_lookup(t->symtab, name);
-	if(!sym) {
-		printf("Could not find variable symbol: '%s' (line: %u, col: %u)\n", name, node->line, node->col);
-		return;
+	Symbol* sym = NULL;
+	if(t->symtab->scope_type == SC_GLOBAL) {
+		sym = symtab_lookup(t->symtab, name);
+		if(!sym) {
+			printf("Could not find variable symbol: '%s' (line: %u, col: %u)\n", name, node->line, node->col);
+			return;
+		}
+	}
+	else {
+		sym = symbol_create();
+		sym->type = SYM_VAR;
+		sym->var.node = node;
+		node->resolved_symbol = sym;
+		sym->var.is_parameter = false;
+		
+		Type* variable_type = resolve_type(node->var_declr.type);
+		if(type_is_void(variable_type)) {
+			printf("-----ERROR-----\n");
+			printf("Variable '%s' cannot have void type (line %u, col %u)\n", name, node->var_declr.type->line, node->var_declr.type->col);
+			printf("---------------\n");
+			type_free(variable_type);
+			variable_type = type_make_primitive(T_error);
+		}
+		sym->var.type = variable_type;
+		sym->resolved_type = variable_type;
+		node->inferred_type = sym->resolved_type;
+		symtab_insert(t->symtab, name, sym);
 	}
 
 	sym->var.has_initializer = (node->var_declr.initializer != NULL);
@@ -163,7 +186,6 @@ void type_visit_var(TypePass* t, ASTNode* node) {
 		printf("---------------\n");
 		return;
 	}
-	sym->var.is_parameter = false;
 	if(t->verbose) symbol_print(sym, 1);
 }
 void type_visit_func(TypePass* t, ASTNode* node) {
@@ -193,12 +215,14 @@ void type_visit_func(TypePass* t, ASTNode* node) {
 		param_sym->var.has_initializer = false;
 		param_sym->var.is_parameter = true;
 		param_sym->resolved_type = param_type;
+		node->func.params[i]->resolved_symbol = param_sym;
+		node->func.params[i]->inferred_type = param_type;
 
 		symtab_insert(t->symtab, param_name.data, param_sym);
 		if(t->verbose) symbol_print(param_sym, 1);
 	}
 
-	type_visit_block(t, node->func.body, false);
+	type_visit_block(t, node->func.body);
 
 	t->symtab = symtab_pop(t->symtab);
 
@@ -208,27 +232,39 @@ void type_visit_func(TypePass* t, ASTNode* node) {
 
 /* -------------------- STATEMENT VISITING LOGIC -------------------- */
 
-void type_visit_block(TypePass* t, ASTNode* node, bool is_loop) {
-	t->symtab = symtab_push(t->arena, t->symtab, is_loop ? SC_LOOP : SC_BLOCK);
-
-	for(usize i = 0; i < node->block.stmt_count; i ++) {
-		type_visit_stmt(t, node->block.stmts[i]);
-	}
-	
-	t->symtab = symtab_pop(t->symtab);
-}
 void type_visit_stmt(TypePass* t, ASTNode* node) {
 	switch(node->node_type) {
+		case NODE_VAR_DECL:
+			type_visit_var(t, node);
+			break;
+		case NODE_BLOCK:
+			type_visit_block(t, node);
+			break;
 		case NODE_EXPR_STMT:
 			type_visit_expr_stmt(t, node);
 			break;
 		case NODE_RETURN_STMT:
 			type_visit_return_stmt(t, node);
 			break;
+		case NODE_FOR_STMT:
+			type_visit_for_stmt(t, node);
+			break;
+		case NODE_IF_STMT:
+			type_visit_if_stmt(t, node);
+			break;
 		default:
-			printf("Unknown statement type %u!\n", node->node_type);
+			printf("Unknown statement type %s!\n", node_type_str(node->node_type));
 			break;
 	}
+}
+void type_visit_block(TypePass* t, ASTNode* node) {
+	t->symtab = symtab_push(t->arena, t->symtab, SC_BLOCK);
+
+	for(usize i = 0; i < node->block.stmt_count; i ++) {
+		type_visit_stmt(t, node->block.stmts[i]);
+	}
+	
+	t->symtab = symtab_pop(t->symtab);
 }
 void type_visit_expr_stmt(TypePass* t, ASTNode* node) {
 	type_visit_expr(t, node->expr_stmt.expr);
@@ -250,6 +286,39 @@ void type_visit_return_stmt(TypePass* t, ASTNode* node) {
 		printf("---------------\n");
 	}
 }
+void type_visit_for_stmt(TypePass* t, ASTNode* node) {
+	ASTNode* init = node->for_stmt.init;
+	ASTNode* cond = node->for_stmt.cond;
+	ASTNode* update = node->for_stmt.update;
+	ASTNode* stmt = node->for_stmt.stmt;
+
+	t->symtab = symtab_push(t->arena, t->symtab, SC_LOOP);
+
+	if(init->node_type == NODE_VAR_DECL) {
+		type_visit_var(t, init);
+	}
+	else {
+		type_visit_expr_stmt(t, init);
+	}
+
+	type_visit_expr(t, cond);
+	type_visit_expr(t, update);
+	type_visit_stmt(t, stmt);
+
+	t->symtab = symtab_pop(t->symtab);
+
+}
+void type_visit_if_stmt(TypePass* t, ASTNode* node) {
+	ASTNode* cond = node->if_stmt.cond;
+	ASTNode* then = node->if_stmt.then_branch;
+	ASTNode* _else = node->if_stmt.else_branch;
+
+	type_visit_expr(t, cond);
+	type_visit_stmt(t, then);
+	if(_else) {
+		type_visit_stmt(t, _else);
+	}
+}
 
 /* -------------------- EXPRESSION VISITING LOGIC -------------------- */
 
@@ -268,7 +337,7 @@ Type* type_visit_expr(TypePass* t, ASTNode* node) {
 		case NODE_IDENTIFIER:
 			return type_visit_identifier(t, node);
 		default:
-			printf("Unknown expression type %u!\n", node->node_type);
+			printf("Unknown expression type %s!\n", node_type_str(node->node_type));
 			return type_make_primitive(T_error);
 	}
 }
@@ -317,7 +386,7 @@ Type* type_visit_binary_expr(TypePass* t, ASTNode* node) {
 		case BINOP_RSHIFT:
 			return binary_bitwise(left_type, right_type);
 		default:
-			printf("Unkown binary operator: %u!\n", node->binary_expr.op);
+			printf("Unkown binary operator: %s!\n", binop_str(node->binary_expr.op));
 			return type_make_primitive(T_error);
 	}
 }
@@ -331,7 +400,7 @@ Type* type_visit_unary_expr(TypePass* t, ASTNode* node) {
 		case UNOP_BIT_NOT:
 			return unary_bitwise(operand);
 		default:
-			printf("Unknown unary operator: %u!\n", node->unary_expr.op);
+			printf("Unknown unary operator: %s!\n", unop_str(node->unary_expr.op));
 			return type_make_primitive(T_error);
 	}
 }
@@ -398,7 +467,7 @@ Type* type_visit_literal(TypePass* t, ASTNode* node) {
 		case LIT_BOOL: return type_make_primitive(T_bool);
 		case LIT_CHAR: return type_make_primitive(T_char);
 		default:
-			printf("Unkown literal type!\n");
+			printf("Unkown literal type %s!\n", lit_type_str(node->literal.lit.kind));
 			return type_make_primitive(T_error);
 	}
 }

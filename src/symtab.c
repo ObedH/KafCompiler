@@ -16,6 +16,11 @@ Symbol* symbol_create(void) {
 	memset(tmp, 0, sizeof(*tmp));
 	return tmp;
 }
+Symbol* symbol_clone(Symbol* s) {
+	Symbol* tmp = symbol_create();
+	memcpy(tmp, s, sizeof(*tmp));
+	return tmp;
+}
 void symbol_func_init(Symbol* symbol) {
 	symbol->func.param_count = 0;
 	symbol->func.param_types = malloc(sizeof(Type*) * 16);

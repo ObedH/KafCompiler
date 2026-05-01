@@ -29,7 +29,7 @@ void decl_visit_program(DeclPass* d, ASTNode* program) {
 				decl_visit_var(d, decl);
 				break;
 			default:
-				printf("Unkown declaration type!\n");
+				printf("Unkown declaration type %s!\n", node_type_str(decl->node_type));
 				break;
 		}
 	}

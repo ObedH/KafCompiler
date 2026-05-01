@@ -26,10 +26,12 @@ void type_visit_var(TypePass* t, ASTNode* node);
 
 /* -------------------- STATEMENT VISITING -------------------- */
 
+void type_visit_block(TypePass* t, ASTNode* node);
 void type_visit_stmt(TypePass* t, ASTNode* node);
-void type_visit_block(TypePass* t, ASTNode* node, bool is_loop);
 void type_visit_expr_stmt(TypePass* t, ASTNode* node);
 void type_visit_return_stmt(TypePass* t, ASTNode* node);
+void type_visit_for_stmt(TypePass* t, ASTNode* node);
+void type_visit_if_stmt(TypePass* t, ASTNode* node);
 
 /* -------------------- EXPRESSION VISITING -------------------- */
 

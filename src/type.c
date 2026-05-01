@@ -266,7 +266,7 @@ bool type_is_assignable(Type* target, Type* value) {
 	if(target->kind == T_array) return false;
 
 	if(value->kind == T_int_literal) {
-		return type_is_integer(target);
+		return type_is_integer(target) || type_is_float(target);
 	}
 
 	if(value->kind == T_float_literal) {

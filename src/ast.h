@@ -40,6 +40,7 @@ typedef enum {
 	// Types
 	NODE_TYPE_NAME
 } NodeType;
+const char* node_type_str(NodeType n);
 typedef enum {
 	BINOP_PLUS,
 	BINOP_MINUS,

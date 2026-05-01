@@ -28,6 +28,7 @@ typedef struct {
 	union {
 		struct {
 			struct s_ast_node* node;
+			u32 vreg;
 			int stack_offset;
 			Type* type;
 			bool has_initializer;
@@ -40,11 +41,12 @@ typedef struct {
 			String* param_names;
 			usize param_count;
 			bool is_defined;
-			String label;
+			u32 label;
 		} func;
 	};
 } Symbol;
 Symbol* symbol_create(void);
+Symbol* symbol_clone(Symbol* s);
 void symbol_func_init(Symbol* symbol);
 void symbol_func_add_param(Symbol* symbol, Type* type, String name);
 void symbol_print(Symbol* symbol, usize l);
