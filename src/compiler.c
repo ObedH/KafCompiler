@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "disas.h"
 
 /* -------------------- COMPILER CREATION -------------------- */
 
@@ -124,6 +125,11 @@ void comp_ir_pass(BasicCompiler* comp, bool verbose) {
 
 	ir_init(&comp->ir_pass, comp->symtab_arena, comp->global_symtab, verbose);
 	ir_visit_program(&comp->ir_pass, comp->root);
+
+	if(verbose) {
+		disas_ir(stdout, comp->ir_pass.ir_head, "");
+	}
+
 	comp->has_ir_pass = true;
 }
 void comp_ir_nodes_free(BasicCompiler* comp) {
