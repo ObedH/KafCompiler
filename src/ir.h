@@ -43,7 +43,8 @@ typedef enum {
 	IR_BIT_OR,
 	IR_BIT_XOR,
 	IR_LSHIFT,
-	IR_RSHIFT
+	IR_RSHIFT,
+	IR_ARITH_OP_NONE
 } IRArithOp;
 typedef enum {
 	IR_EQUAL,
@@ -51,7 +52,8 @@ typedef enum {
 	IR_GREATER_THAN,
 	IR_LESS_THAN,
 	IR_GREATER_THAN_OR_EQUAL,
-	IR_LESS_THAN_OR_EQUAL
+	IR_LESS_THAN_OR_EQUAL,
+	IR_CMP_OP_NONE
 } IRCmpOp;
 typedef enum {
 	IR_NEG,

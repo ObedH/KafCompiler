@@ -60,7 +60,8 @@ typedef enum {
 	BINOP_BIT_XOR,
 	BINOP_LSHIFT,
 	BINOP_RSHIFT,
-	BINOP_MOD
+	BINOP_MOD,
+	BINOP_NONE
 } BinOp;
 const char* binop_str(BinOp binop);
 typedef enum {

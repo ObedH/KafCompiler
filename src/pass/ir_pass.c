@@ -82,7 +82,7 @@ static IRArithOp ast_binop_to_ir_arithop(BinOp binop) {
 		case BINOP_BIT_OR: return IR_BIT_OR;
 		case BINOP_BIT_XOR: return IR_BIT_XOR;
 		default:
-			return -1;
+			return IR_ARITH_OP_NONE;
 	}
 }
 static IRCmpOp ast_binop_to_ir_cmpop(BinOp binop) {
@@ -94,7 +94,7 @@ static IRCmpOp ast_binop_to_ir_cmpop(BinOp binop) {
 		case BINOP_GE: return IR_GREATER_THAN_OR_EQUAL;
 		case BINOP_LE: return IR_LESS_THAN_OR_EQUAL;
 		default:
-			return -1;
+			return IR_CMP_OP_NONE;
 	}
 }
 /* -------------------- TOP LEVEL VISITING -------------------- */
@@ -306,7 +306,7 @@ IROperand ir_visit_bin_expr(IRPass* i, ASTNode* node) {
 
 	u32 tres = ir_make_local_id();
 
-	if(ast_binop_to_ir_arithop(node->binary_expr.op) >= 0) {
+	if(ast_binop_to_ir_arithop(node->binary_expr.op) != IR_ARITH_OP_NONE) {
 		emit_arith(i, ast_binop_to_ir_arithop(node->binary_expr.op), tres, ta, tb);
 	}
 	else {
